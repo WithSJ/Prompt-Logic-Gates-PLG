@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLG · Prompt Logic Gates IDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e12;
+  --bg2:#0e141a;
+  --panel:#11181f;
+  --panel2:#161f28;
+  --node:#19232e;
+  --node-head:#1f2c39;
+  --line:#2a3a47;
+  --line2:#34495a;
+  --txt:#dbe6ef;
+  --txt-dim:#8499a9;
+  --txt-faint:#5c6f7e;
+  --file:#f2b134;     /* amber  – file pins/nodes */
+  --prompt:#22d3ee;   /* cyan   – prompt pins */
+  --and:#3b82f6;      /* blue   – merge */
+  --or:#a855f7;       /* violet – select */
+  --not:#ef4444;      /* red    – negate */
+  --ok:#34d399;
+  --warn:#fbbf24;
+  --err:#f87171;
+  --radius:10px;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--txt);
+  overflow:hidden;
+  font-size:14px;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea{font-family:inherit}
+
+/* ---------- LAYOUT ---------- */
+.app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+
+/* top bar */
+.topbar{
+  display:flex;align-items:center;gap:14px;
+  height:54px;padding:0 16px;
+  background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border-bottom:1px solid var(--line);
+  z-index:30;
+}
+.brand{display:flex;align-items:center;gap:11px;user-select:none}
+.brand .logo{
+  width:30px;height:30px;border-radius:7px;
+  background:radial-gradient(120% 120% at 30% 20%,#1f3a52,#0d1620);
+  border:1px solid var(--line2);
+  display:grid;place-items:center;position:relative;
+  box-shadow:0 0 16px rgba(34,211,238,.18) inset;
+}
+.brand .logo svg{width:18px;height:18px}
+.brand .name{font-weight:700;letter-spacing:.4px;font-size:15px}
+.brand .name b{color:var(--prompt)}
+.brand .sub{font-size:10.5px;color:var(--txt-faint);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.spacer{flex:1}
+
+.tbtn{
+  display:inline-flex;align-items:center;gap:7px;
+  height:34px;padding:0 13px;border-radius:8px;
+  background:var(--panel2);border:1px solid var(--line);
+  color:var(--txt-dim);font-weight:500;font-size:13px;
+  transition:.15s;
+}
+.tbtn:hover{background:var(--node-head);color:var(--txt);border-color:var(--line2)}
+.tbtn svg{width:15px;height:15px}
+.tbtn.primary{
+  background:linear-gradient(180deg,#1d4ed8,#1e40af);
+  color:#fff;border-color:#2c5fd6;
+  box-shadow:0 1px 0 rgba(255,255,255,.12) inset, 0 4px 14px rgba(37,99,235,.35);
+}
+.tbtn.primary:hover{filter:brightness(1.08)}
+.tbtn.primary:disabled{opacity:.55;cursor:wait;filter:none}
+.pill{
+  font-family:var(--mono);font-size:11px;color:var(--txt-faint);
+  padding:5px 9px;border:1px dashed var(--line2);border-radius:7px;
+}
+.pill b{color:var(--prompt)}
+
+/* main 3-col */
+.main{display:grid;grid-template-columns:212px 1fr 326px;min-height:0}
+
+/* ---------- LEFT PALETTE ---------- */
+.palette{
+  background:var(--panel);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;min-height:0;
+}
+.pal-scroll{overflow-y:auto;padding:14px 12px;flex:1}
+.pal-h{
+  font-size:10.5px;text-transform:uppercase;letter-spacing:1.4px;
+  color:var(--txt-faint);margin:4px 4px 9px;font-weight:600;
+}
+.pal-h:not(:first-child){margin-top:20px}
+.pnode{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 11px;border-radius:9px;margin-bottom:8px;
+  background:var(--node);border:1px solid var(--line);
+  cursor:grab;transition:.13s;user-select:none;position:relative;overflow:hidden;
+}
+.pnode:hover{border-color:var(--accent,#3b82f6);transform:translateX(2px)}
+.pnode:active{cursor:grabbing}
+.pnode::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent,#3b82f6)}
+.pnode .ic{
+  width:30px;height:30px;border-radius:7px;flex:none;
+  display:grid;place-items:center;
+  background:color-mix(in srgb,var(--accent) 16%,transparent);
+  color:var(--accent);font-family:var(--mono);font-weight:600;font-size:12px;
+  border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);
+}
+.pnode .meta .t{font-weight:600;font-size:13px}
+.pnode .meta .d{font-size:10.5px;color:var(--txt-faint);margin-top:1px}
+
+.legend{padding:13px 12px;border-top:1px solid var(--line);background:var(--bg2)}
+.legend .lh{font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:var(--txt-faint);margin-bottom:9px;font-weight:600}
+.lrow{display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--txt-dim);margin-bottom:7px}
+.ldot{width:11px;height:11px;border-radius:50%;border:2px solid #000;flex:none}
+.ldot.file{background:var(--file);box-shadow:0 0 7px var(--file)}
+.ldot.prompt{background:var(--prompt);box-shadow:0 0 7px var(--prompt)}
+.legend .tip{font-size:10.5px;color:var(--txt-faint);margin-top:8px;line-height:1.5}
+
+/* ---------- CANVAS ---------- */
+.canvas-wrap{position:relative;overflow:hidden;background:var(--bg)}
+#viewport{
+  position:absolute;inset:0;overflow:hidden;cursor:grab;
+  background-image:radial-gradient(circle, #1c2733 1px, transparent 1px);
+  background-size:24px 24px;background-position:0 0;
+}
+#viewport.panning{cursor:grabbing}
+#viewport.connecting{cursor:crosshair}
+#world{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+#edges{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:1}
+#edges path.edge{fill:none;stroke-width:2.4;pointer-events:stroke;cursor:pointer;transition:stroke-width .1s}
+#edges path.hit{fill:none;stroke:transparent;stroke-width:16;pointer-events:stroke;cursor:pointer}
+#edges path.sel{stroke:#fff !important;stroke-width:3.4}
+#edges path.temp{stroke-dasharray:6 5;opacity:.85;pointer-events:none}
+
+/* node */
+.node{
+  position:absolute;width:220px;background:var(--node);
+  border:1px solid var(--line2);border-radius:var(--radius);
+  box-shadow:0 10px 30px -12px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02) inset;
+  z-index:2;user-select:none;
+}
+.node.sel{box-shadow:0 0 0 2px var(--accent), 0 14px 34px -10px rgba(0,0,0,.8)}
+.node-header{
+  display:flex;align-items:center;gap:8px;
+  height:38px;padding:0 10px;border-radius:var(--radius) var(--radius) 0 0;
+  background:linear-gradient(180deg,var(--node-head),color-mix(in srgb,var(--node-head) 80%,#000));
+  border-bottom:1px solid var(--line);cursor:grab;position:relative;
+}
+.node-header::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:var(--radius) 0 0 0;background:var(--accent)}
+.node-header .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 9px var(--accent);margin-left:3px}
+.node-title{font-weight:600;font-size:13px;letter-spacing:.3px}
+.node-title small{color:var(--txt-faint);font-weight:400;font-size:10.5px;margin-left:5px;letter-spacing:.5px}
+.node-del{
+  margin-left:auto;width:20px;height:20px;border-radius:5px;
+  color:var(--txt-faint);font-size:16px;line-height:1;display:grid;place-items:center;
+  opacity:0;transition:.12s;
+}
+.node:hover .node-del{opacity:1}
+.node-del:hover{background:var(--not);color:#fff}
+.node-io{position:relative}
+.pin{
+  position:absolute;width:14px;height:14px;border-radius:50%;
+  border:2.5px solid var(--bg);cursor:crosshair;z-index:3;transition:.1s;
+}
+.pin.file{background:var(--file);box-shadow:0 0 0 1px color-mix(in srgb,var(--file) 60%,#000)}
+.pin.prompt{background:var(--prompt);box-shadow:0 0 0 1px color-mix(in srgb,var(--prompt) 60%,#000)}
+.pin:hover{transform:scale(1.35);filter:brightness(1.2)}
+.pin.compat{box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 45%,transparent)}
+.pin-label{position:absolute;font-family:var(--mono);font-size:10.5px;color:var(--txt-dim);white-space:nowrap;pointer-events:none}
+.node-body{padding:10px 11px 12px;border-top:1px solid var(--line)}
+.node-body textarea{
+  width:100%;min-height:54px;resize:vertical;
+  background:var(--bg);border:1px solid var(--line);border-radius:7px;
+  color:var(--txt);padding:8px 9px;font-size:12.5px;line-height:1.45;
+  font-family:var(--mono);
+}
+.node-body textarea:focus{outline:none;border-color:var(--accent)}
+.node-body textarea::placeholder{color:var(--txt-faint)}
+.filerow{display:flex;align-items:center;gap:7px}
+.filerow input{
+  flex:1;background:var(--bg);border:1px solid var(--line);border-radius:7px;
+  color:var(--file);padding:7px 9px;font-size:12px;font-family:var(--mono);
+}
+.filerow input:focus{outline:none;border-color:var(--file)}
+.filerow .ficon{color:var(--file)}
+.gate-desc{font-size:11px;color:var(--txt-faint);line-height:1.5;font-family:var(--mono)}
+.gate-desc b{color:var(--txt-dim);font-weight:500}
+
+/* zoom controls */
+.zoomctl{
+  position:absolute;left:14px;bottom:14px;z-index:10;
+  display:flex;flex-direction:column;gap:1px;
+  background:var(--panel2);border:1px solid var(--line);border-radius:9px;overflow:hidden;
+  box-shadow:0 8px 24px -10px rgba(0,0,0,.7);
+}
+.zoomctl button{width:34px;height:32px;display:grid;place-items:center;color:var(--txt-dim);font-size:16px;transition:.12s}
+.zoomctl button:hover{background:var(--node-head);color:var(--txt)}
+.zoomctl .zval{font-family:var(--mono);font-size:10.5px;color:var(--txt-faint);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:5px 0;text-align:center}
+.hint{
+  position:absolute;right:14px;bottom:14px;z-index:10;
+  font-family:var(--mono);font-size:10.5px;color:var(--txt-faint);
+  background:color-mix(in srgb,var(--panel) 80%,transparent);
+  padding:7px 11px;border-radius:8px;border:1px solid var(--line);backdrop-filter:blur(4px);
+  line-height:1.7;text-align:right;pointer-events:none;
+}
+.hint kbd{background:var(--node-head);border:1px solid var(--line2);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:10px;color:var(--txt-dim)}
+
+/* ---------- RIGHT PANEL ---------- */
+.inspector{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.insp-head{
+  display:flex;align-items:center;gap:9px;padding:14px 15px 12px;border-bottom:1px solid var(--line);
+}
+.insp-head .ti{font-weight:600;font-size:13.5px}
+.insp-head .ro{
+  margin-left:auto;font-family:var(--mono);font-size:9.5px;letter-spacing:.8px;
+  color:var(--file);border:1px solid color-mix(in srgb,var(--file) 35%,transparent);
+  padding:2px 7px;border-radius:5px;text-transform:uppercase;
+  background:color-mix(in srgb,var(--file) 10%,transparent);
+}
+.insp-scroll{overflow-y:auto;flex:1;padding:15px}
+.osec{margin-bottom:18px}
+.osec-h{
+  display:flex;align-items:center;gap:7px;
+  font-size:10.5px;text-transform:uppercase;letter-spacing:1.3px;font-weight:600;
+  margin-bottom:8px;
+}
+.osec-h .sq{width:9px;height:9px;border-radius:2px}
+.osec-h .ct{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--txt-faint);letter-spacing:0;text-transform:none}
+.obox{
+  background:var(--bg);border:1px solid var(--line);border-radius:9px;
+  padding:11px 12px;font-family:var(--mono);font-size:12.5px;line-height:1.6;
+  white-space:pre-wrap;word-break:break-word;min-height:42px;color:var(--txt);
+}
+.obox.pos{border-left:3px solid var(--ok)}
+.obox.neg{border-left:3px solid var(--not)}
+.obox.empty{color:var(--txt-faint);font-style:italic}
+.copybtn{
+  margin-left:auto;font-size:10px;color:var(--txt-faint);padding:2px 7px;border-radius:5px;
+  border:1px solid var(--line);font-family:var(--mono);transition:.12s;letter-spacing:0;text-transform:none;
+}
+.copybtn:hover{color:var(--txt);border-color:var(--line2);background:var(--node-head)}
+
+.breakdown{border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.brow{display:flex;align-items:center;gap:8px;padding:8px 11px;border-bottom:1px solid var(--line);font-size:12px}
+.brow:last-child{border-bottom:none}
+.brow .bn{flex:1;font-family:var(--mono);font-size:12px;color:var(--txt)}
+.brow .cat{font-size:9.5px;padding:2px 7px;border-radius:5px;font-family:var(--mono);letter-spacing:.3px}
+.brow .pr{font-family:var(--mono);font-size:11px;color:var(--txt-faint);min-width:34px;text-align:right}
+.brow.drop{opacity:.5}
+.brow.drop .bn{text-decoration:line-through}
+
+.empty-state{text-align:center;color:var(--txt-faint);padding:30px 10px;font-size:12.5px;line-height:1.7}
+.empty-state svg{width:34px;height:34px;opacity:.4;margin-bottom:10px}
+
+.complog{
+  font-family:var(--mono);font-size:11px;color:var(--txt-dim);
+  background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;line-height:1.8;
+}
+.complog .ln{display:flex;gap:8px}
+.complog .ln .n{color:var(--txt-faint);min-width:16px}
+.complog .ln .ok{color:var(--ok)}
+.complog .ln .info{color:var(--prompt)}
+.complog .ln .ai{color:var(--or)}
+
+.insp-foot{padding:12px 15px;border-top:1px solid var(--line);display:flex;gap:9px}
+.insp-foot .tbtn{flex:1;justify-content:center}
+
+/* ---------- MODAL ---------- */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(4,7,10,.72);backdrop-filter:blur(6px);
+  z-index:100;display:none;align-items:center;justify-content:center;padding:24px;
+}
+.modal-bg.show{display:flex}
+.modal{
+  width:560px;max-width:100%;max-height:88vh;overflow-y:auto;
+  background:var(--panel);border:1px solid var(--line2);border-radius:16px;
+  box-shadow:0 30px 80px -20px rgba(0,0,0,.8);
+}
+.modal-h{display:flex;align-items:center;gap:11px;padding:18px 20px;border-bottom:1px solid var(--line)}
+.modal-h .ti{font-weight:700;font-size:16px}
+.modal-h .x{margin-left:auto;width:30px;height:30px;border-radius:7px;color:var(--txt-faint);font-size:20px;display:grid;place-items:center}
+.modal-h .x:hover{background:var(--node-head);color:var(--txt)}
+.modal-b{padding:20px}
+.modal-note{font-size:12px;color:var(--txt-dim);line-height:1.65;margin-bottom:20px;background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--prompt);border-radius:8px;padding:11px 13px}
+.modal-note b{color:var(--txt)}
+
+.seg{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.seg button{
+  flex:1;min-width:120px;padding:11px 10px;border-radius:9px;border:1px solid var(--line);
+  background:var(--bg);color:var(--txt-dim);font-weight:500;font-size:13px;transition:.13s;
+  display:flex;align-items:center;gap:8px;justify-content:center;
+}
+.seg button .pdot{width:9px;height:9px;border-radius:50%}
+.seg button:hover{border-color:var(--line2);color:var(--txt)}
+.seg button.active{background:var(--node-head);color:var(--txt);border-color:var(--prompt);box-shadow:0 0 0 1px var(--prompt) inset}
+
+.fld{margin-bottom:16px}
+.fld label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--txt-faint);font-weight:600;margin-bottom:7px}
+.fld .row{display:flex;gap:9px}
+.fld input,.fld select{
+  width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;
+  color:var(--txt);padding:11px 12px;font-size:13px;font-family:var(--mono);
+}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--prompt)}
+.fld input::placeholder{color:var(--txt-faint)}
+.fld .hint2{font-size:11px;color:var(--txt-faint);margin-top:6px;line-height:1.5}
+.fld .hint2 a{color:var(--prompt)}
+.keywrap{position:relative}
+.keywrap .eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:6px;color:var(--txt-faint);display:grid;place-items:center}
+.keywrap .eye:hover{color:var(--txt)}
+.keywrap input{padding-right:42px}
+
+.modal-status{
+  font-family:var(--mono);font-size:12px;padding:10px 13px;border-radius:9px;margin-top:4px;
+  display:none;align-items:center;gap:9px;
+}
+.modal-status.show{display:flex}
+.modal-status.ok{background:color-mix(in srgb,var(--ok) 12%,transparent);color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent)}
+.modal-status.err{background:color-mix(in srgb,var(--err) 12%,transparent);color:var(--err);border:1px solid color-mix(in srgb,var(--err) 30%,transparent)}
+.modal-status.load{background:var(--bg2);color:var(--txt-dim);border:1px solid var(--line)}
+.modal-f{display:flex;gap:10px;padding:16px 20px;border-top:1px solid var(--line)}
+.modal-f .tbtn{flex:1;justify-content:center;height:40px}
+
+/* toast */
+.toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--panel2);border:1px solid var(--line2);border-radius:10px;
+  padding:11px 18px;font-size:13px;z-index:200;opacity:0;transition:.28s;
+  box-shadow:0 14px 40px -12px rgba(0,0,0,.8);display:flex;align-items:center;gap:9px;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.ok{border-left:3px solid var(--ok)}
+.toast.err{border-left:3px solid var(--err)}
+.toast.info{border-left:3px solid var(--prompt)}
+.spin{width:14px;height:14px;border:2px solid var(--line2);border-top-color:var(--prompt);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;border:2px solid var(--panel)}
+::-webkit-scrollbar-thumb:hover{background:var(--line2)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ===== TOP BAR ===== -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h3M16 9h3M16 15h3"/><circle cx="5" cy="12" r="1.6"/><circle cx="20" cy="9" r="1.6"/><circle cx="20" cy="15" r="1.6"/>
+          <path d="M8 8h4a4 4 0 0 1 4 4 4 4 0 0 1-4 4H8z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="name">PLG <b>·</b> Prompt Logic Gates</div>
+        <div class="sub">Semantic Prompt Compiler</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <span class="pill" id="modePill">mode: <b>rule-based</b></span>
+    <button class="tbtn" id="btnSettings" title="Connect AI model APIs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      AI Models
+    </button>
+    <button class="tbtn" id="btnSave" title="Save graph as .json">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+      Save
+    </button>
+    <button class="tbtn" id="btnLoad" title="Load graph .json">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
+      Load
+    </button>
+    <button class="tbtn primary" id="btnCompile" title="Run the semantic compiler">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      <span id="compileLabel">Compile</span>
+    </button>
+  </div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main">
+    <!-- LEFT PALETTE -->
+    <div class="palette">
+      <div class="pal-scroll">
+        <div class="pal-h">Sources</div>
+        <div class="pnode" data-add="fileNode" style="--accent:var(--file)">
+          <div class="ic">.txt</div>
+          <div class="meta"><div class="t">File Node</div><div class="d">single source of truth</div></div>
+        </div>
+        <div class="pnode" data-add="promptBox" style="--accent:var(--prompt)">
+          <div class="ic">"…"</div>
+          <div class="meta"><div class="t">Prompt Box</div><div class="d">a written prompt</div></div>
+        </div>
+
+        <div class="pal-h">Logic Gates</div>
+        <div class="pnode" data-add="and" style="--accent:var(--and)">
+          <div class="ic">&amp;</div>
+          <div class="meta"><div class="t">AND</div><div class="d">merge &amp; rank</div></div>
+        </div>
+        <div class="pnode" data-add="or" style="--accent:var(--or)">
+          <div class="ic">≥1</div>
+          <div class="meta"><div class="t">OR</div><div class="d">context select</div></div>
+        </div>
+        <div class="pnode" data-add="not" style="--accent:var(--not)">
+          <div class="ic">¬</div>
+          <div class="meta"><div class="t">NOT</div><div class="d">negative control</div></div>
+        </div>
+      </div>
+      <div class="legend">
+        <div class="lh">Pin types</div>
+        <div class="lrow"><span class="ldot file"></span> file reference</div>
+        <div class="lrow"><span class="ldot prompt"></span> prompt content</div>
+        <div class="tip">Drag from an <b style="color:var(--txt-dim)">output</b> pin to a matching <b style="color:var(--txt-dim)">input</b> pin. Types must match.</div>
+      </div>
+    </div>
+
+    <!-- CANVAS -->
+    <div class="canvas-wrap">
+      <div id="viewport">
+        <svg id="edges"></svg>
+        <div id="world"></div>
+      </div>
+      <div class="zoomctl">
+        <button id="zoomIn">+</button>
+        <div class="zval" id="zoomVal">100%</div>
+        <button id="zoomOut">−</button>
+        <button id="zoomFit" title="Fit / reset" style="font-size:13px">⊡</button>
+      </div>
+      <div class="hint">
+        <kbd>drag pin</kbd> connect &nbsp; <kbd>drag bg</kbd> pan<br>
+        <kbd>wheel</kbd> zoom &nbsp; <kbd>Del</kbd> remove selected
+      </div>
+    </div>
+
+    <!-- RIGHT INSPECTOR -->
+    <div class="inspector">
+      <div class="insp-head">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="var(--file)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+        <span class="ti" id="fileTitle">prompt.txt</span>
+        <span class="ro">read-only</span>
+      </div>
+      <div class="insp-scroll" id="output">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <div>Wire up a graph and hit <b style="color:var(--prompt)">Compile</b> to assemble your optimised prompt.</div>
+        </div>
+      </div>
+      <div class="insp-foot">
+        <button class="tbtn" id="btnExportTxt">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
+          Export .txt
+        </button>
+        <button class="tbtn" id="btnClear">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          Clear all
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SETTINGS MODAL ===== -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-h">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--prompt)" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      <span class="ti">Connect AI Models</span>
+      <button class="x" id="modalClose">×</button>
+    </div>
+    <div class="modal-b">
+      <div class="modal-note">
+        The semantic compiler can run <b>offline (rule-based)</b> or <b>AI-assisted</b>. In AI mode the compiler asks your chosen model to categorise, rank, de-conflict and select prompts — exactly the logic the Prompt Logic Gates need. Keys stay <b>in this browser only</b> and are sent straight to the provider.
+      </div>
+
+      <div class="fld">
+        <label>Compiler mode</label>
+        <div class="seg" id="modeSeg">
+          <button data-mode="rule"><span class="pdot" style="background:var(--txt-faint)"></span>Rule-based (offline)</button>
+          <button data-mode="ai"><span class="pdot" style="background:var(--or)"></span>AI-assisted</button>
+        </div>
+      </div>
+
+      <div class="fld">
+        <label>Active provider</label>
+        <div class="seg" id="provSeg">
+          <button data-prov="anthropic"><span class="pdot" style="background:#d97757"></span>Claude</button>
+          <button data-prov="openai"><span class="pdot" style="background:#10a37f"></span>ChatGPT</button>
+          <button data-prov="google"><span class="pdot" style="background:#4285f4"></span>Gemini</button>
+          <button data-prov="openrouter"><span class="pdot" style="background:#8b8bff"></span>OpenRouter</button>
+        </div>
+      </div>
+
+      <!-- per-provider config -->
+      <div data-cfg="anthropic">
+        <div class="fld">
+          <label>Anthropic API key</label>
+          <div class="keywrap"><input type="password" id="key_anthropic" placeholder="sk-ant-…"><button class="eye" data-eye="key_anthropic">👁</button></div>
+          <div class="hint2">Get one at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a></div>
+        </div>
+        <div class="fld"><label>Model</label><input type="text" id="model_anthropic" placeholder="claude-3-5-sonnet-latest"></div>
+      </div>
+      <div data-cfg="openai" style="display:none">
+        <div class="fld">
+          <label>OpenAI API key</label>
+          <div class="keywrap"><input type="password" id="key_openai" placeholder="sk-…"><button class="eye" data-eye="key_openai">👁</button></div>
+          <div class="hint2">Get one at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></div>
+        </div>
+        <div class="fld"><label>Model</label><input type="text" id="model_openai" placeholder="gpt-4o-mini"></div>
+      </div>
+      <div data-cfg="google" style="display:none">
+        <div class="fld">
+          <label>Google AI Studio API key</label>
+          <div class="keywrap"><input type="password" id="key_google" placeholder="AIza…"><button class="eye" data-eye="key_google">👁</button></div>
+          <div class="hint2">Get one at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></div>
+        </div>
+        <div class="fld"><label>Model</label><input type="text" id="model_google" placeholder="gemini-1.5-flash"></div>
+      </div>
+      <div data-cfg="openrouter" style="display:none">
+        <div class="fld">
+          <label>OpenRouter API key</label>
+          <div class="keywrap"><input type="password" id="key_openrouter" placeholder="sk-or-…"><button class="eye" data-eye="key_openrouter">👁</button></div>
+          <div class="hint2">Get one at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai</a></div>
+        </div>
+        <div class="fld"><label>Model</label><input type="text" id="model_openrouter" placeholder="openai/gpt-4o-mini"></div>
+      </div>
+
+      <button class="tbtn" id="btnTest" style="width:100%;justify-content:center;height:40px;margin-top:4px">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+        Test connection
+      </button>
+      <div class="modal-status" id="testStatus"></div>
+    </div>
+    <div class="modal-f">
+      <button class="tbtn primary" id="btnSaveSettings" style="background:linear-gradient(180deg,#0e9f6e,#057a55);border-color:#0e9f6e">Save &amp; close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept=".json" style="display:none">
+
+<script>
+"use strict";
+/* ============================================================
+   PROMPT LOGIC GATES — Node-graph IDE + semantic compiler
+   Single-file app. No build step, no backend.
+   ============================================================ */
+
+/* ---------- safe storage (works even when localStorage blocked) ---------- */
+const Store = (() => {
+  let ok = false; try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); ok = true; } catch(e){}
+  const mem = {};
+  return {
+    get:(k)=>{ try { return ok ? localStorage.getItem(k) : (mem[k] ?? null); } catch(e){ return mem[k] ?? null; } },
+    set:(k,v)=>{ try { ok ? localStorage.setItem(k,v) : (mem[k]=v); } catch(e){ mem[k]=v; } }
+  };
+})();
+
+/* ---------- node definitions ---------- */
+const NODE_W = 220, HEADER_H = 38, PIN_TOP = HEADER_H + 18, PIN_GAP = 26;
+const NODE_DEFS = {
+  fileNode : { title:'File Node',  sub:'',       accent:'var(--file)',   inputs:[], outputs:[{id:'file',label:'file',type:'file'}],  body:'file'   },
+  promptBox: { title:'Prompt Box', sub:'',       accent:'var(--prompt)', inputs:[], outputs:[{id:'out',label:'prompt',type:'prompt'}],body:'prompt' },
+  and      : { title:'AND',        sub:'merge',  accent:'var(--and)',    inputs:[{id:'file',label:'file',type:'file'},{id:'a',label:'A',type:'prompt'},{id:'b',label:'B',type:'prompt'}], outputs:[{id:'file',label:'file',type:'file'}], body:'gate' },
+  or       : { title:'OR',         sub:'select', accent:'var(--or)',     inputs:[{id:'file',label:'file',type:'file'},{id:'a',label:'A',type:'prompt'},{id:'b',label:'B',type:'prompt'}], outputs:[{id:'file',label:'file',type:'file'}], body:'gate' },
+  not      : { title:'NOT',        sub:'negate', accent:'var(--not)',    inputs:[{id:'file',label:'file',type:'file'},{id:'a',label:'A',type:'prompt'}], outputs:[{id:'file',label:'file',type:'file'}], body:'gate' }
+};
+const GATE_DESC = {
+  and:'Reads file → ranks A &amp; B by importance → merges in order.',
+  or :'Reads file → compares A vs B → keeps the best fit for context.',
+  not:'Reads file → routes A into <b>negative</b> memory to suppress it.'
+};
+
+/* ---------- global state ---------- */
+let nextId = 1;
+const uid = (p)=> p + '_' + (nextId++) + '_' + Math.random().toString(36).slice(2,6);
+const state = {
+  nodes: [], edges: [],
+  panX: 0, panY: 0, zoom: 1,
+  sel: { node:null, edge:null },
+  lastCompile: null,
+  settings: {
+    mode:'rule', provider:'anthropic',
+    keys:{ anthropic:'', openai:'', google:'', openrouter:'' },
+    models:{ anthropic:'claude-3-5-sonnet-latest', openai:'gpt-4o-mini', google:'gemini-1.5-flash', openrouter:'openai/gpt-4o-mini' }
+  }
+};
+
+/* ---------- DOM refs ---------- */
+const viewport = document.getElementById('viewport');
+const world    = document.getElementById('world');
+const edgesSvg = document.getElementById('edges');
+const output   = document.getElementById('output');
+
+/* ============================================================
+   GEOMETRY
+   ============================================================ */
+const pinY = (i)=> PIN_TOP + i*PIN_GAP;
+function bodyTop(type){
+  const d = NODE_DEFS[type];
+  const slots = Math.max(d.inputs.length, d.outputs.length, 1);
+  return pinY(slots-1) + PIN_GAP/2 + 6;
+}
+function pinWorldPos(nodeId, role, pinId){
+  const n = state.nodes.find(x=>x.id===nodeId); if(!n) return {x:0,y:0};
+  const d = NODE_DEFS[n.type];
+  const list = role==='out' ? d.outputs : d.inputs;
+  const i = list.findIndex(p=>p.id===pinId);
+  return { x: n.x + (role==='out' ? NODE_W : 0), y: n.y + pinY(i<0?0:i) };
+}
+const worldToScreen = (wx,wy)=> ({ x: state.panX + wx*state.zoom, y: state.panY + wy*state.zoom });
+function screenToWorld(sx,sy){
+  const r = viewport.getBoundingClientRect();
+  return { x:(sx - r.left - state.panX)/state.zoom, y:(sy - r.top - state.panY)/state.zoom };
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function applyTransform(){
+  world.style.transform = `translate(${state.panX}px,${state.panY}px) scale(${state.zoom})`;
+  viewport.style.backgroundPosition = `${state.panX}px ${state.panY}px`;
+  viewport.style.backgroundSize = `${24*state.zoom}px ${24*state.zoom}px`;
+  document.getElementById('zoomVal').textContent = Math.round(state.zoom*100)+'%';
+  drawEdges();
+}
+
+function renderGraph(){
+  // remove existing node DOM (keep the svg)
+  [...world.querySelectorAll('.node')].forEach(n=>n.remove());
+  state.nodes.forEach(n=> world.appendChild(buildNode(n)));
+  drawEdges();
+}
+
+function buildNode(n){
+  const d = NODE_DEFS[n.type];
+  const el = document.createElement('div');
+  el.className = 'node' + (state.sel.node===n.id ? ' sel':'');
+  el.style.left = n.x+'px'; el.style.top = n.y+'px';
+  el.style.setProperty('--accent', d.accent);
+  el.dataset.node = n.id;
+
+  // header
+  const head = document.createElement('div');
+  head.className = 'node-header';
+  head.dataset.drag = n.id;
+  head.innerHTML = `<span class="dot"></span><span class="node-title">${d.title}${d.sub?` <small>${d.sub}</small>`:''}</span>`;
+  const del = document.createElement('button');
+  del.className = 'node-del'; del.textContent='×'; del.title='Delete node';
+  del.onclick = (e)=>{ e.stopPropagation(); removeNode(n.id); };
+  head.appendChild(del);
+  el.appendChild(head);
+
+  // io spacer — pins are appended to the node itself (node-local coords) so DOM matches edge math
+  const io = document.createElement('div'); io.className='node-io';
+  io.style.minHeight = (bodyTop(n.type)-HEADER_H)+'px';
+  el.appendChild(io);
+
+  // body
+  const body = document.createElement('div'); body.className='node-body';
+  if(d.body==='prompt'){
+    const ta = document.createElement('textarea');
+    ta.placeholder = 'type a prompt…  e.g. abandoned hospital';
+    ta.value = n.data.text || '';
+    ta.oninput = ()=>{ n.data.text = ta.value; };
+    ta.onpointerdown = (e)=> e.stopPropagation();
+    body.appendChild(ta);
+  } else if(d.body==='file'){
+    const row = document.createElement('div'); row.className='filerow';
+    row.innerHTML = `<svg class="ficon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`;
+    const inp = document.createElement('input');
+    inp.value = n.data.filename || 'prompt.txt';
+    inp.oninput = ()=>{ n.data.filename = inp.value; document.getElementById('fileTitle').textContent = inp.value || 'prompt.txt'; };
+    inp.onpointerdown = (e)=> e.stopPropagation();
+    row.appendChild(inp); body.appendChild(row);
+  } else {
+    const g = document.createElement('div'); g.className='gate-desc';
+    g.innerHTML = GATE_DESC[n.type] || '';
+    body.appendChild(g);
+  }
+  el.appendChild(body);
+
+  // pins appended directly to the node element (absolute, node-local coords) so DOM pins align with edge endpoints
+  d.inputs.forEach((p,i)=> el.appendChild(makePin(n.id,'in',p,i)));
+  d.outputs.forEach((p,i)=> el.appendChild(makePin(n.id,'out',p,i)));
+
+  el.onpointerdown = (e)=>{ if(e.target.closest('.pin')||e.target.closest('input,textarea')) return; selectNode(n.id); };
+  return el;
+}
+
+function makePin(nodeId, role, p, i){
+  const pin = document.createElement('span');
+  pin.className = 'pin ' + p.type;
+  pin.dataset.node = nodeId; pin.dataset.pin = p.id; pin.dataset.role = role; pin.dataset.ptype = p.type;
+  pin.style.top = (pinY(i)-7)+'px';
+  if(role==='out') pin.style.left = (NODE_W-7)+'px'; else pin.style.left = '-7px';
+  pin.title = `${role==='out'?'output':'input'} · ${p.type}`;
+  // label
+  const lab = document.createElement('span');
+  lab.className='pin-label'; lab.textContent = p.label;
+  lab.style.top = (pinY(i)-8)+'px';
+  if(role==='out'){ lab.style.right='14px'; } else { lab.style.left='14px'; }
+  const frag = document.createDocumentFragment();
+  frag.appendChild(pin); frag.appendChild(lab);
+  return frag;
+}
+
+function drawEdges(){
+  let html = '';
+  // committed edges
+  state.edges.forEach(ed=>{
+    const a = worldToScreen(...Object.values(pinWorldPos(ed.from.node,'out',ed.from.pin)));
+    const b = worldToScreen(...Object.values(pinWorldPos(ed.to.node,'in',ed.to.pin)));
+    const ptype = sourcePinType(ed);
+    const col = ptype==='file' ? 'var(--file)' : 'var(--prompt)';
+    const dx = Math.max(40, Math.abs(b.x-a.x)*0.5);
+    const dpath = `M ${a.x} ${a.y} C ${a.x+dx} ${a.y}, ${b.x-dx} ${b.y}, ${b.x} ${b.y}`;
+    const sel = state.sel.edge===ed.id ? ' sel' : '';
+    html += `<path class="hit" data-edge="${ed.id}" d="${dpath}"></path>`;
+    html += `<path class="edge${sel}" data-edge="${ed.id}" style="stroke:${col}" d="${dpath}"></path>`;
+  });
+  // temp connection
+  if(conn && conn.active){
+    const a = worldToScreen(...Object.values(pinWorldPos(conn.node, conn.role, conn.pin)));
+    const b = conn.cur;
+    const from = conn.role==='out' ? a : b, to = conn.role==='out' ? b : a;
+    const dx = Math.max(40, Math.abs(to.x-from.x)*0.5);
+    const col = conn.ptype==='file' ? 'var(--file)' : 'var(--prompt)';
+    html += `<path class="edge temp" style="stroke:${col}" d="M ${from.x} ${from.y} C ${from.x+dx} ${from.y}, ${to.x-dx} ${to.y}, ${to.x} ${to.y}"></path>`;
+  }
+  edgesSvg.innerHTML = html;
+}
+function sourcePinType(ed){
+  const n = state.nodes.find(x=>x.id===ed.from.node); if(!n) return 'prompt';
+  const p = NODE_DEFS[n.type].outputs.find(o=>o.id===ed.from.pin);
+  return p ? p.type : 'prompt';
+}
+
+/* ============================================================
+   NODE / EDGE OPS
+   ============================================================ */
+function addNode(type, wx, wy){
+  const n = { id:uid(type), type, x:Math.round(wx), y:Math.round(wy), data:{} };
+  if(type==='fileNode') n.data.filename = 'prompt.txt';
+  if(type==='promptBox') n.data.text = '';
+  state.nodes.push(n);
+  renderGraph();
+  return n;
+}
+function removeNode(id){
+  state.nodes = state.nodes.filter(n=>n.id!==id);
+  state.edges = state.edges.filter(e=> e.from.node!==id && e.to.node!==id);
+  if(state.sel.node===id) state.sel.node=null;
+  renderGraph();
+}
+function selectNode(id){
+  state.sel.node = id; state.sel.edge = null;
+  [...world.querySelectorAll('.node')].forEach(el=> el.classList.toggle('sel', el.dataset.node===id));
+  drawEdges();
+}
+function selectEdge(id){
+  state.sel.edge = id; state.sel.node = null;
+  [...world.querySelectorAll('.node')].forEach(el=> el.classList.remove('sel'));
+  drawEdges();
+}
+function clearSelection(){ state.sel.node=null; state.sel.edge=null; [...world.querySelectorAll('.node')].forEach(el=>el.classList.remove('sel')); drawEdges(); }
+
+function canConnect(from, to){
+  if(from.node===to.node) return false;
+  // need one out + one in
+  if(from.role===to.role) return false;
+  if(from.ptype!==to.ptype) return false;
+  return true;
+}
+function makeEdge(out, inp){
+  // out = {node,pin}, inp = {node,pin}
+  // remove existing edge into the same input pin (single connection per input)
+  state.edges = state.edges.filter(e=> !(e.to.node===inp.node && e.to.pin===inp.pin));
+  state.edges.push({ id:uid('e'), from:{node:out.node,pin:out.pin}, to:{node:inp.node,pin:inp.pin} });
+  drawEdges();
+}
+
+/* ============================================================
+   INTERACTION: pan / zoom / drag node / connect / select
+   ============================================================ */
+let drag = null;   // node drag
+let pan = null;    // canvas pan
+let conn = null;   // connection in progress
+
+viewport.addEventListener('pointerdown', (e)=>{
+  const pinEl = e.target.closest('.pin');
+  const dragEl = e.target.closest('[data-drag]');
+  const edgeEl = e.target.closest('[data-edge]');
+  const nodeEl = e.target.closest('.node');
+
+  if(pinEl){
+    // start a connection
+    e.preventDefault();
+    conn = {
+      active:true,
+      node: pinEl.dataset.node, pin: pinEl.dataset.pin,
+      role: pinEl.dataset.role, ptype: pinEl.dataset.ptype,
+      cur: { x:e.clientX - viewport.getBoundingClientRect().left, y:e.clientY - viewport.getBoundingClientRect().top }
+    };
+    viewport.classList.add('connecting');
+    highlightCompatible(conn);
+    return;
+  }
+  if(dragEl){
+    const n = state.nodes.find(x=>x.id===dragEl.dataset.drag);
+    selectNode(n.id);
+    drag = { id:n.id, startX:e.clientX, startY:e.clientY, ox:n.x, oy:n.y };
+    return;
+  }
+  if(edgeEl){
+    selectEdge(edgeEl.dataset.edge);
+    return;
+  }
+  if(!nodeEl){
+    // pan
+    clearSelection();
+    pan = { startX:e.clientX, startY:e.clientY, ox:state.panX, oy:state.panY };
+    viewport.classList.add('panning');
+  }
+});
+
+window.addEventListener('pointermove', (e)=>{
+  if(drag){
+    const dx = (e.clientX-drag.startX)/state.zoom, dy=(e.clientY-drag.startY)/state.zoom;
+    const n = state.nodes.find(x=>x.id===drag.id);
+    n.x = Math.round(drag.ox+dx); n.y = Math.round(drag.oy+dy);
+    const el = world.querySelector(`.node[data-node="${n.id}"]`);
+    if(el){ el.style.left=n.x+'px'; el.style.top=n.y+'px'; }
+    drawEdges();
+  } else if(pan){
+    state.panX = pan.ox + (e.clientX-pan.startX);
+    state.panY = pan.oy + (e.clientY-pan.startY);
+    applyTransform();
+  } else if(conn){
+    const r = viewport.getBoundingClientRect();
+    conn.cur = { x:e.clientX-r.left, y:e.clientY-r.top };
+    drawEdges();
+  }
+});
+
+window.addEventListener('pointerup', (e)=>{
+  if(conn){
+    const pinEl = e.target.closest('.pin');
+    if(pinEl){
+      const target = { node:pinEl.dataset.node, pin:pinEl.dataset.pin, role:pinEl.dataset.role, ptype:pinEl.dataset.ptype };
+      const src = { node:conn.node, pin:conn.pin, role:conn.role, ptype:conn.ptype };
+      if(canConnect(src,target)){
+        const out = src.role==='out'? src : target;
+        const inp = src.role==='out'? target : src;
+        makeEdge({node:out.node,pin:out.pin},{node:inp.node,pin:inp.pin});
+      } else {
+        toast('Pins must match (file→file, prompt→prompt) and go output→input','err');
+      }
+    }
+    conn=null; viewport.classList.remove('connecting'); clearCompatible(); drawEdges();
+  }
+  drag=null; pan=null; viewport.classList.remove('panning');
+});
+
+function highlightCompatible(c){
+  [...document.querySelectorAll('.pin')].forEach(p=>{
+    const t={node:p.dataset.node,pin:p.dataset.pin,role:p.dataset.role,ptype:p.dataset.ptype};
+    if(canConnect({node:c.node,role:c.role,ptype:c.ptype}, t)) p.classList.add('compat');
+  });
+}
+function clearCompatible(){ [...document.querySelectorAll('.pin.compat')].forEach(p=>p.classList.remove('compat')); }
+
+// zoom on wheel
+viewport.addEventListener('wheel', (e)=>{
+  e.preventDefault();
+  const r = viewport.getBoundingClientRect();
+  const mx = e.clientX-r.left, my=e.clientY-r.top;
+  const wx = (mx-state.panX)/state.zoom, wy=(my-state.panY)/state.zoom;
+  const factor = e.deltaY<0 ? 1.12 : 1/1.12;
+  state.zoom = Math.min(2.2, Math.max(0.3, state.zoom*factor));
+  state.panX = mx - wx*state.zoom; state.panY = my - wy*state.zoom;
+  applyTransform();
+},{passive:false});
+
+// delete key
+window.addEventListener('keydown',(e)=>{
+  if(e.target.matches('input,textarea')) return;
+  if(e.key==='Delete'||e.key==='Backspace'){
+    if(state.sel.edge){ state.edges=state.edges.filter(x=>x.id!==state.sel.edge); state.sel.edge=null; drawEdges(); }
+    else if(state.sel.node){ removeNode(state.sel.node); }
+  }
+});
+
+/* palette: click to add, drag to add */
+document.querySelectorAll('.pnode').forEach(p=>{
+  p.addEventListener('click', ()=>{
+    const c = screenToWorld(viewport.getBoundingClientRect().left+260, viewport.getBoundingClientRect().top+120);
+    addNode(p.dataset.add, c.x + Math.random()*40, c.y + Math.random()*40);
+  });
+  p.setAttribute('draggable','true');
+  p.addEventListener('dragstart',(e)=> e.dataTransfer.setData('add', p.dataset.add));
+});
+viewport.addEventListener('dragover',(e)=>e.preventDefault());
+viewport.addEventListener('drop',(e)=>{
+  e.preventDefault();
+  const t = e.dataTransfer.getData('add'); if(!t) return;
+  const w = screenToWorld(e.clientX, e.clientY);
+  addNode(t, w.x-NODE_W/2, w.y-30);
+});
+
+/* zoom buttons */
+document.getElementById('zoomIn').onclick =()=>{ zoomBy(1.15); };
+document.getElementById('zoomOut').onclick=()=>{ zoomBy(1/1.15); };
+document.getElementById('zoomFit').onclick = fitView;
+function zoomBy(f){
+  const r=viewport.getBoundingClientRect(), mx=r.width/2, my=r.height/2;
+  const wx=(mx-state.panX)/state.zoom, wy=(my-state.panY)/state.zoom;
+  state.zoom=Math.min(2.2,Math.max(0.3,state.zoom*f));
+  state.panX=mx-wx*state.zoom; state.panY=my-wy*state.zoom; applyTransform();
+}
+function fitView(){
+  if(!state.nodes.length){ state.zoom=1; state.panX=40; state.panY=40; applyTransform(); return; }
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  state.nodes.forEach(n=>{ minX=Math.min(minX,n.x); minY=Math.min(minY,n.y); maxX=Math.max(maxX,n.x+NODE_W); maxY=Math.max(maxY,n.y+200); });
+  const r=viewport.getBoundingClientRect();
+  const pad=70;
+  const zx=(r.width-pad*2)/(maxX-minX), zy=(r.height-pad*2)/(maxY-minY);
+  state.zoom=Math.min(1.3,Math.max(0.35,Math.min(zx,zy)));
+  state.panX = pad - minX*state.zoom + (r.width-pad*2-(maxX-minX)*state.zoom)/2;
+  state.panY = pad - minY*state.zoom + (r.height-pad*2-(maxY-minY)*state.zoom)/2;
+  applyTransform();
+}
+
+/* ============================================================
+   THE SEMANTIC COMPILER  (rule-based core + optional AI)
+   ============================================================ */
+const CATEGORIES = {
+  subject:    { p:100, kw:['man','woman','person','people','character','figure','girl','boy','child','ghost','nurse','creature','monster','demon','spirit','animal','dog','cat','soldier','priest','father','daughter','robot','zombie','skeleton','witch','beast','entity','protagonist','villain','face','portrait'] },
+  environment:{ p:90,  kw:['hospital','forest','room','factory','city','street','house','building','dungeon','cave','school','office','church','temple','abandoned','ruins','landscape','mountain','desert','ocean','sea','village','town','corridor','hallway','basement','attic','warehouse','laboratory','swamp','jungle','interior','exterior','background','setting','environment'] },
+  action:     { p:80,  kw:['running','walking','standing','sitting','screaming','crying','attacking','holding','fighting','jumping','falling','crawling','hiding','chasing','floating','flying','reaching','looking','staring','praying','dancing','reading','sleeping','dying','bleeding'] },
+  emotion:    { p:70,  kw:['scary','terrifying','eerie','creepy','dread','horror','horrific','ominous','unsettling','frightening','tense','melancholic','sad','happy','joyful','peaceful','calm','angry','lonely','hopeless','disturbing','nightmarish','sinister','mood','atmosphere','atmospheric'] },
+  lighting:   { p:60,  kw:['dark','darkness','bright','dim','neon','candlelight','moonlight','sunlight','backlit','fog','foggy','mist','shadow','shadows','glow','glowing','flickering','spotlight','rim light','volumetric','silhouette','overcast','dusk','dawn','night','day','lighting'] },
+  style:      { p:50,  kw:['ps1','ps2','realistic','photorealistic','cartoon','anime','toon','painterly','cinematic','3d','3d render','render','pixel','pixel art','low poly','retro','vintage','noir','watercolor','oil painting','sketch','comic','manga','hyperrealistic','stylized','grunge','vhs','analog','found footage','style','aesthetic'] },
+  camera:     { p:40,  kw:['close-up','closeup','wide shot','wide angle','first-person','first person','third-person','top-down','bird','fisheye','depth of field','bokeh','macro','panorama','dutch angle','low angle','high angle','tracking shot','pov','shot','lens','35mm','50mm','85mm'] },
+  effects:    { p:30,  kw:['grain','film grain','blur','motion blur','particles','vignette','chromatic aberration','glitch','lens flare','dust','smoke','sparks','rain','snow','scanlines','noise','distortion','vfx','effect','effects','bloom'] },
+  detail:     { p:45,  kw:[] }
+};
+const CONFLICTS = [
+  ['realistic','cartoon'],['photorealistic','cartoon'],['realistic','anime'],['photorealistic','anime'],
+  ['realistic','toon'],['hyperrealistic','pixel'],['dark','bright'],['day','night'],['dawn','dusk'],
+  ['colorful','monochrome'],['detailed','minimalist'],['cute','horror'],['cute','terrifying'],
+  ['peaceful','terrifying'],['happy','horror'],['calm','chaotic'],['clean','grunge']
+];
+
+function tokens(s){ return (s||'').toLowerCase().replace(/[^a-z0-9\s-]/g,' ').split(/\s+/).filter(Boolean); }
+function hasTerm(text, term){
+  text=(text||'').toLowerCase();
+  return text.includes(term.toLowerCase());
+}
+function categorize(text){
+  const t = (text||'').toLowerCase();
+  let best={cat:'detail',hits:0,p:CATEGORIES.detail.p};
+  for(const [cat,info] of Object.entries(CATEGORIES)){
+    if(cat==='detail') continue;
+    let hits=0;
+    for(const k of info.kw){ if(t.includes(k)) hits++; }
+    if(hits>best.hits || (hits===best.hits && hits>0 && info.p>best.p)){
+      best={cat,hits,p:info.p};
+    }
+  }
+  return { category:best.cat, priority:CATEGORIES[best.cat].p };
+}
+function contextScore(text, contextText){
+  const ct = tokens(contextText), tt = tokens(text);
+  const cset = new Set(ct);
+  let overlap=0; tt.forEach(w=>{ if(cset.has(w)) overlap++; });
+  // category-affinity: does it share a category with anything in context?
+  const tc = categorize(text).category;
+  let affinity=0;
+  for(const [cat,info] of Object.entries(CATEGORIES)){
+    if(cat===tc && cat!=='detail'){ for(const k of info.kw){ if(contextText.toLowerCase().includes(k)){ affinity+=1; break; } } }
+  }
+  // conflict penalty against context
+  let penalty=0;
+  for(const [a,b] of CONFLICTS){
+    if((hasTerm(text,a)&&hasTerm(contextText,b)) || (hasTerm(text,b)&&hasTerm(contextText,a))) penalty+=3;
+  }
+  return overlap*2 + affinity + categorize(text).priority/100 - penalty;
+}
+
+/* Walk graph in file-ref dependency order and accumulate memory */
+function buildExecutionOrder(){
+  // gates depend on whoever feeds their 'file' input
+  const gates = state.nodes.filter(n=>['and','or','not'].includes(n.type));
+  const fileFeeder = {}; // gateId -> upstream node feeding its file pin
+  gates.forEach(g=>{
+    const e = state.edges.find(x=> x.to.node===g.id && x.to.pin==='file');
+    fileFeeder[g.id] = e ? e.from.node : null;
+  });
+  // topo sort gates by file chain
+  const order=[]; const visited=new Set(); const temp=new Set();
+  function visit(id){
+    if(visited.has(id)||!gates.find(g=>g.id===id)) return;
+    if(temp.has(id)) return; temp.add(id);
+    const up=fileFeeder[id];
+    if(up && gates.find(g=>g.id===up)) visit(up);
+    temp.delete(id); visited.add(id); order.push(id);
+  }
+  gates.forEach(g=>visit(g.id));
+  return order;
+}
+function promptInput(gateId, pinId){
+  const e = state.edges.find(x=> x.to.node===gateId && x.to.pin===pinId);
+  if(!e) return null;
+  const src = state.nodes.find(n=>n.id===e.from.node);
+  if(!src) return null;
+  if(src.type==='promptBox') return (src.data.text||'').trim() || null;
+  return null;
+}
+
+async function compile(){
+  const btn=document.getElementById('btnCompile');
+  const log=[];
+  const mem = { positive:[], negative:[], context:'' };
+
+  // ---- guard: need a file node + at least one gate ----
+  const fileNode = state.nodes.find(n=>n.type==='fileNode');
+  const gates = state.nodes.filter(n=>['and','or','not'].includes(n.type));
+  if(!fileNode){ toast('Add a File Node — it is the single source of truth.','err'); return; }
+  if(!gates.length){ toast('Add at least one gate (AND / OR / NOT).','err'); return; }
+
+  btn.disabled=true; document.getElementById('compileLabel').textContent = state.settings.mode==='ai' ? 'Thinking…' : 'Compiling…';
+
+  try{
+    const order = buildExecutionOrder();
+    log.push({n:1,t:'Memory read',d:`source: ${fileNode.data.filename||'prompt.txt'}`,c:'info'});
+
+    // ---- run gates in order, accumulate raw memory ----
+    for(const gid of order){
+      const g = state.nodes.find(n=>n.id===gid);
+      const A = promptInput(gid,'a'), B = promptInput(gid,'b');
+      if(g.type==='and'){
+        [A,B].filter(Boolean).forEach(txt=>{ const c=categorize(txt); mem.positive.push({text:txt,...c,by:'AND'}); });
+        if(A||B) log.push({n:'',t:`AND merged`,d:[A,B].filter(Boolean).join('  +  '),c:'ok'});
+      } else if(g.type==='or'){
+        const cands=[A,B].filter(Boolean);
+        if(cands.length){
+          let best=cands[0], bs=-1e9;
+          cands.forEach(t=>{ const s=contextScore(t, mem.positive.map(p=>p.text).join(' ')); if(s>bs){bs=s;best=t;} });
+          const c=categorize(best); mem.positive.push({text:best,...c,by:'OR'});
+          const dropped=cands.filter(t=>t!==best);
+          log.push({n:'',t:'OR selected',d:`kept “${best}”${dropped.length?` · dropped “${dropped.join('”, “')}”`:''}`,c:'ok'});
+        }
+      } else if(g.type==='not'){
+        if(A){ mem.negative.push({text:A,by:'NOT'}); log.push({n:'',t:'NOT suppressed',d:A,c:'ok'}); }
+      }
+    }
+    log.push({n:2,t:'Semantic analysis',d:`${mem.positive.length} positive · ${mem.negative.length} negative`,c:'info'});
+
+    // ---- conflict resolution (rule-based) ----
+    let removed=[];
+    for(const [a,b] of CONFLICTS){
+      const ia = mem.positive.findIndex(p=>hasTerm(p.text,a));
+      const ib = mem.positive.findIndex(p=>hasTerm(p.text,b));
+      if(ia>=0 && ib>=0 && ia!==ib){
+        const lo = mem.positive[ia].priority <= mem.positive[ib].priority ? ia : ib;
+        removed.push(mem.positive[lo].text);
+        mem.positive[lo]._drop = `conflicts with “${(lo===ia?b:a)}”`;
+      }
+    }
+    log.push({n:3,t:'Priority ranking',d:'scored by semantic category',c:'info'});
+    log.push({n:4,t:'Conflict resolution',d: removed.length? `removed ${removed.length}`:'no conflicts',c: removed.length?'ok':'info'});
+
+    // ---- optional AI refinement pass ----
+    let aiUsed=false;
+    if(state.settings.mode==='ai'){
+      const key = state.settings.keys[state.settings.provider];
+      if(!key){ toast('AI mode is on but no API key set. Open AI Models to add one.','err'); }
+      else{
+        try{
+          const refined = await aiRefine(mem);
+          if(refined){
+            mem.positive = refined.positive;
+            if(refined.negative_additions) refined.negative_additions.forEach(t=>{ if(t&&!mem.negative.find(n=>n.text===t)) mem.negative.push({text:t,by:'AI'}); });
+            aiUsed=true;
+            log.push({n:'',t:'AI compiler pass',d:`${providerLabel()} re-ranked & de-conflicted`,c:'ai'});
+          }
+        }catch(err){
+          toast('AI pass failed — used rule-based result. '+(err.message||''),'err');
+          log.push({n:'',t:'AI pass failed',d:String(err.message||err).slice(0,80),c:'ai'});
+        }
+      }
+    }
+
+    // ---- reorder (foundational first) ----
+    mem.positive.sort((x,y)=> (y.priority||0)-(x.priority||0));
+    log.push({n:5,t:'Reordering',d:'foundational → secondary',c:'info'});
+
+    // ---- final compilation ----
+    const kept = mem.positive.filter(p=>!p._drop);
+    const positiveStr = kept.map(p=>p.text).join(', ');
+    const negativeStr = mem.negative.map(n=>n.text).join(', ');
+    mem.context = kept.map(p=>p.text).join(' ');
+    log.push({n:6,t:'Final compilation',d:`${kept.length} terms compiled`,c:'ok'});
+
+    // write into file node (source of truth)
+    fileNode.data.compiled = { positive:positiveStr, negative:negativeStr, items:mem.positive, negItems:mem.negative };
+    state.lastCompile = { positive:positiveStr, negative:negativeStr, items:mem.positive, neg:mem.negative, log, aiUsed };
+    renderOutput(state.lastCompile);
+    toast(aiUsed?`Compiled with ${providerLabel()} ✦`:'Compiled (rule-based)','ok');
+  } finally {
+    btn.disabled=false; document.getElementById('compileLabel').textContent='Compile';
+  }
+}
+
+/* ---------- render compiled output into right panel ---------- */
+const CAT_COLORS = { subject:'var(--not)',environment:'var(--file)',action:'#fb923c',emotion:'#f472b6',lighting:'#facc15',style:'var(--or)',camera:'var(--and)',effects:'var(--prompt)',detail:'var(--txt-faint)' };
+function renderOutput(r){
+  const kept = r.items.filter(p=>!p._drop);
+  let h='';
+  // positive
+  h+=`<div class="osec"><div class="osec-h"><span class="sq" style="background:var(--ok)"></span>Positive prompt<button class="copybtn" data-copy="pos">copy</button></div>
+      <div class="obox pos${r.positive?'':' empty'}" id="posBox">${r.positive? escapeHtml(r.positive) : 'nothing yet'}</div></div>`;
+  // negative
+  h+=`<div class="osec"><div class="osec-h"><span class="sq" style="background:var(--not)"></span>Negative prompt<button class="copybtn" data-copy="neg">copy</button></div>
+      <div class="obox neg${r.negative?'':' empty'}" id="negBox">${r.negative? escapeHtml(r.negative) : 'none'}</div></div>`;
+  // breakdown
+  if(r.items.length){
+    h+=`<div class="osec"><div class="osec-h"><span class="sq" style="background:var(--prompt)"></span>Compilation breakdown<span class="ct">${kept.length}/${r.items.length} kept</span></div><div class="breakdown">`;
+    r.items.forEach(p=>{
+      h+=`<div class="brow${p._drop?' drop':''}">
+            <span class="bn">${escapeHtml(p.text)}</span>
+            <span class="cat" style="color:${CAT_COLORS[p.category]};background:color-mix(in srgb,${CAT_COLORS[p.category]} 15%,transparent)">${p.category}</span>
+            <span class="pr">${p.priority}</span>
+          </div>`;
+    });
+    h+=`</div></div>`;
+  }
+  // log
+  if(r.log){
+    h+=`<div class="osec"><div class="osec-h"><span class="sq" style="background:var(--or)"></span>Compiler pipeline</div><div class="complog">`;
+    r.log.forEach(l=> h+=`<div class="ln"><span class="n">${l.n!==''?l.n:'›'}</span><span><b style="color:var(--txt)">${l.t}</b> <span class="${l.c||''}">— ${l.d}</span></span></div>`);
+    h+=`</div></div>`;
+  }
+  output.innerHTML=h;
+  output.querySelectorAll('[data-copy]').forEach(b=> b.onclick=()=>{
+    const txt = b.dataset.copy==='pos'? r.positive : r.negative;
+    copy(txt); b.textContent='copied'; setTimeout(()=>b.textContent='copy',1200);
+  });
+}
+function escapeHtml(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ============================================================
+   AI PROVIDERS  — unified callAI()
+   ============================================================ */
+function providerLabel(){ return {anthropic:'Claude',openai:'ChatGPT',google:'Gemini',openrouter:'OpenRouter'}[state.settings.provider]; }
+
+async function callAI(system, user){
+  const s=state.settings, prov=s.provider, key=s.keys[prov], model=s.models[prov];
+  if(!key) throw new Error('no API key');
+
+  if(prov==='anthropic'){
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model,max_tokens:1024,system,messages:[{role:'user',content:user}]})
+    });
+    if(!res.ok) throw new Error(await errText(res));
+    const d=await res.json();
+    return (d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+  }
+  if(prov==='openai'){
+    const res=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'content-type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({model,messages:[{role:'system',content:system},{role:'user',content:user}],temperature:0.2})
+    });
+    if(!res.ok) throw new Error(await errText(res));
+    const d=await res.json();
+    return d.choices?.[0]?.message?.content || '';
+  }
+  if(prov==='google'){
+    const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+    const res=await fetch(url,{
+      method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:user}]}],generationConfig:{temperature:0.2}})
+    });
+    if(!res.ok) throw new Error(await errText(res));
+    const d=await res.json();
+    return (d.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('') || '';
+  }
+  if(prov==='openrouter'){
+    const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
+      method:'POST',
+      headers:{'content-type':'application/json','Authorization':'Bearer '+key,'HTTP-Referer':location.href,'X-Title':'PLG IDE'},
+      body:JSON.stringify({model,messages:[{role:'system',content:system},{role:'user',content:user}],temperature:0.2})
+    });
+    if(!res.ok) throw new Error(await errText(res));
+    const d=await res.json();
+    return d.choices?.[0]?.message?.content || '';
+  }
+  throw new Error('unknown provider');
+}
+async function errText(res){
+  let t=''; try{ const j=await res.json(); t=j.error?.message||j.message||JSON.stringify(j); }catch(e){ t=await res.text().catch(()=> ''); }
+  return `${res.status} ${t}`.slice(0,160);
+}
+
+/* AI refinement of the positive memory (one structured JSON call) */
+async function aiRefine(mem){
+  if(!mem.positive.length) return null;
+  const system = `You are the semantic compiler inside a "Prompt Logic Gates" visual IDE. You receive prompt fragments that must be merged into ONE optimised generation prompt. Your job: (1) classify each fragment into exactly one category from [subject, environment, action, emotion, lighting, style, camera, effects, detail]; (2) give a priority 0-100 where foundational elements (subject 100, environment 90, action 80, emotion 70, lighting 60, style 50, camera 40, effects 30, detail 45) rank higher; (3) detect contradictions and mark the weaker fragment as dropped; (4) suggest extra negative-prompt terms that prevent the dropped/contradictory concepts. Respond with STRICT JSON only, no markdown, no commentary.`;
+  const list = mem.positive.map((p,i)=>`${i+1}. "${p.text}"`).join('\n');
+  const neg = mem.negative.map(n=>`"${n.text}"`).join(', ') || '(none)';
+  const user = `Positive fragments to compile:\n${list}\n\nExisting negative terms: ${neg}\n\nReturn JSON exactly in this shape:\n{"positive":[{"text":"...","category":"environment","priority":90,"keep":true}],"negative_additions":["..."]}\nInclude every fragment in "positive" (set "keep":false for ones that should be dropped due to conflict). Keep "text" identical to the input fragment.`;
+  const raw = await callAI(system, user);
+  const json = extractJson(raw);
+  if(!json || !Array.isArray(json.positive)) throw new Error('bad AI JSON');
+  const positive = json.positive.map(p=>({
+    text:String(p.text||'').trim(),
+    category: CATEGORIES[p.category]?p.category:'detail',
+    priority: Number.isFinite(+p.priority)?Math.max(0,Math.min(100,+p.priority)):(CATEGORIES[p.category]?.p||45),
+    by:'AI',
+    _drop: (p.keep===false) ? 'AI: conflict' : undefined
+  })).filter(p=>p.text);
+  return { positive, negative_additions:(json.negative_additions||[]).map(String) };
+}
+function extractJson(s){
+  if(!s) return null;
+  s=s.replace(/```json/gi,'').replace(/```/g,'').trim();
+  const a=s.indexOf('{'), b=s.lastIndexOf('}');
+  if(a<0||b<0) return null;
+  try{ return JSON.parse(s.slice(a,b+1)); }catch(e){ return null; }
+}
+
+/* ============================================================
+   SETTINGS MODAL
+   ============================================================ */
+const modal=document.getElementById('modal');
+function openSettings(){ syncSettingsUI(); modal.classList.add('show'); }
+function closeSettings(){ modal.classList.remove('show'); document.getElementById('testStatus').className='modal-status'; }
+document.getElementById('btnSettings').onclick=openSettings;
+document.getElementById('modalClose').onclick=closeSettings;
+modal.addEventListener('click',e=>{ if(e.target===modal) closeSettings(); });
+
+function syncSettingsUI(){
+  document.querySelectorAll('#modeSeg button').forEach(b=> b.classList.toggle('active', b.dataset.mode===state.settings.mode));
+  document.querySelectorAll('#provSeg button').forEach(b=> b.classList.toggle('active', b.dataset.prov===state.settings.provider));
+  document.querySelectorAll('[data-cfg]').forEach(c=> c.style.display = c.dataset.cfg===state.settings.provider?'block':'none');
+  ['anthropic','openai','google','openrouter'].forEach(p=>{
+    document.getElementById('key_'+p).value = state.settings.keys[p]||'';
+    document.getElementById('model_'+p).value = state.settings.models[p]||'';
+  });
+}
+document.querySelectorAll('#modeSeg button').forEach(b=> b.onclick=()=>{ state.settings.mode=b.dataset.mode; syncSettingsUI(); });
+document.querySelectorAll('#provSeg button').forEach(b=> b.onclick=()=>{ state.settings.provider=b.dataset.prov; syncSettingsUI(); });
+document.querySelectorAll('[data-eye]').forEach(b=> b.onclick=()=>{ const i=document.getElementById(b.dataset.eye); i.type=i.type==='password'?'text':'password'; });
+
+document.getElementById('btnSaveSettings').onclick=()=>{
+  ['anthropic','openai','google','openrouter'].forEach(p=>{
+    state.settings.keys[p]=document.getElementById('key_'+p).value.trim();
+    state.settings.models[p]=document.getElementById('model_'+p).value.trim()||state.settings.models[p];
+  });
+  persistSettings(); updateModePill(); closeSettings(); toast('AI settings saved','ok');
+};
+document.getElementById('btnTest').onclick=async()=>{
+  // read current fields first
+  const p=state.settings.provider;
+  state.settings.keys[p]=document.getElementById('key_'+p).value.trim();
+  state.settings.models[p]=document.getElementById('model_'+p).value.trim()||state.settings.models[p];
+  const st=document.getElementById('testStatus');
+  if(!state.settings.keys[p]){ st.className='modal-status show err'; st.innerHTML='⚠ Enter an API key first.'; return; }
+  st.className='modal-status show load'; st.innerHTML='<span class="spin"></span> Pinging '+providerLabel()+'…';
+  try{
+    const r=await callAI('You are a connection test. Reply with the single word OK.','Reply with OK.');
+    st.className='modal-status show ok'; st.innerHTML='✓ Connected to '+providerLabel()+'. Response: '+escapeHtml((r||'').trim().slice(0,40));
+  }catch(e){
+    st.className='modal-status show err'; st.innerHTML='✕ '+escapeHtml(String(e.message||e));
+  }
+};
+
+function updateModePill(){
+  const pill=document.getElementById('modePill');
+  if(state.settings.mode==='ai') pill.innerHTML=`mode: <b>${providerLabel()}</b>`;
+  else pill.innerHTML='mode: <b>rule-based</b>';
+}
+function persistSettings(){
+  // store models + mode + provider, and keys (local browser only)
+  Store.set('plg_settings', JSON.stringify(state.settings));
+}
+function loadSettings(){
+  try{ const s=JSON.parse(Store.get('plg_settings')||'null'); if(s){ Object.assign(state.settings,s); state.settings.keys=Object.assign({anthropic:'',openai:'',google:'',openrouter:''},s.keys||{}); } }catch(e){}
+  updateModePill();
+}
+
+/* ============================================================
+   SAVE / LOAD / EXPORT
+   ============================================================ */
+document.getElementById('btnSave').onclick=()=>{
+  const graph={ version:1, nodes:state.nodes, edges:state.edges, view:{panX:state.panX,panY:state.panY,zoom:state.zoom} };
+  download('plg-graph.json', JSON.stringify(graph,null,2), 'application/json');
+  toast('Graph saved as plg-graph.json','ok');
+};
+document.getElementById('btnLoad').onclick=()=> document.getElementById('fileInput').click();
+document.getElementById('fileInput').onchange=(e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{
+    const g=JSON.parse(rd.result);
+    state.nodes=g.nodes||[]; state.edges=g.edges||[];
+    if(g.view){ state.panX=g.view.panX; state.panY=g.view.panY; state.zoom=g.view.zoom; }
+    // bump nextId so new nodes don't collide
+    state.nodes.forEach(n=>{ const m=/_(\d+)_/.exec(n.id); if(m) nextId=Math.max(nextId, +m[1]+1); });
+    renderGraph(); applyTransform();
+    const fn=state.nodes.find(n=>n.type==='fileNode'); document.getElementById('fileTitle').textContent=fn?.data?.filename||'prompt.txt';
+    toast('Graph loaded','ok');
+  }catch(err){ toast('Could not read that file','err'); } };
+  rd.readAsText(f); e.target.value='';
+};
+document.getElementById('btnExportTxt').onclick=()=>{
+  if(!state.lastCompile){ toast('Compile first, then export.','info'); return; }
+  const fn=(state.nodes.find(n=>n.type==='fileNode')?.data?.filename)||'prompt.txt';
+  const body=`# Positive\n${state.lastCompile.positive||''}\n\n# Negative\n${state.lastCompile.negative||''}\n`;
+  download(fn, body, 'text/plain');
+  toast('Exported '+fn,'ok');
+};
+document.getElementById('btnClear').onclick=()=>{
+  if(!state.nodes.length) return;
+  if(confirm('Clear the whole canvas?')){ state.nodes=[]; state.edges=[]; state.lastCompile=null; clearSelection(); renderGraph(); output.innerHTML=`<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><div>Canvas cleared. Drag in nodes from the left to start again.</div></div>`; }
+};
+document.getElementById('btnCompile').onclick=compile;
+
+function download(name, text, mime){
+  const blob=new Blob([text],{type:mime}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function copy(t){ try{ navigator.clipboard.writeText(t||''); }catch(e){} }
+
+/* ---------- toast ---------- */
+let toastT;
+function toast(msg,type='info'){
+  const el=document.getElementById('toast');
+  el.className='toast show '+type; el.textContent=msg;
+  clearTimeout(toastT); toastT=setTimeout(()=>el.className='toast '+type,2600);
+}
+
+/* ============================================================
+   SEED EXAMPLE GRAPH (from the PLG document examples)
+   ============================================================ */
+function seedExample(){
+  const f  = addNode('fileNode', 80, 250);
+  const pA = addNode('promptBox', 80, 40);  pA.data.text='Abandoned hospital';
+  const pB = addNode('promptBox', 80, 470); pB.data.text='PS1 graphics';
+  const and= addNode('and', 420, 150);
+  const pN = addNode('promptBox', 420, 470); pN.data.text='cute cartoon style';
+  const not= addNode('not', 760, 250);
+  renderGraph();
+  makeEdge({node:f.id,pin:'file'},{node:and.id,pin:'file'});
+  makeEdge({node:pA.id,pin:'out'},{node:and.id,pin:'a'});
+  makeEdge({node:pB.id,pin:'out'},{node:and.id,pin:'b'});
+  makeEdge({node:and.id,pin:'file'},{node:not.id,pin:'file'});
+  makeEdge({node:pN.id,pin:'out'},{node:not.id,pin:'a'});
+  fitView();
+  setTimeout(compile, 200);
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+loadSettings();
+applyTransform();
+seedExample();
+</script>
+</body>
+</html>

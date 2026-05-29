@@ -1,0 +1,915 @@
+// PLG Semantic Compiler Engine
+// Node-by-Node compilation trace + AI gate logic connection triggers
+
+export const CATEGORIES = {
+  subject:    { p: 100, label: 'Subject', kw: ['man','woman','person','people','character','figure','girl','boy','child','ghost','nurse','creature','monster','demon','spirit','animal','dog','cat','soldier','priest','father','daughter','robot','zombie','skeleton','witch','beast','entity','protagonist','villain','face','portrait'] },
+  environment:{ p: 90,  label: 'Environment', kw: ['hospital','forest','room','factory','city','street','house','building','dungeon','cave','school','office','church','temple','abandoned','ruins','landscape','mountain','desert','ocean','sea','village','town','corridor','hallway','basement','attic','warehouse','laboratory','swamp','jungle','interior','exterior','background','setting','environment'] },
+  action:     { p: 80,  label: 'Action', kw: ['running','walking','standing','sitting','screaming','crying','attacking','holding','fighting','jumping','falling','crawling','hiding','chasing','floating','flying','reaching','looking','staring','praying','dancing','reading','sleeping','dying','bleeding'] },
+  emotion:    { p: 70,  label: 'Emotion', kw: ['scary','terrifying','eerie','creepy','dread','horror','horrific','ominous','unsettling','frightening','tense','melancholic','sad','happy','joyful','peaceful','calm','angry','lonely','hopeless','disturbing','nightmarish','sinister','mood','atmosphere','atmospheric'] },
+  lighting:   { p: 60,  label: 'Lighting', kw: ['dark','darkness','bright','dim','neon','candlelight','moonlight','sunlight','backlit','fog','foggy','mist','shadow','shadows','glow','glowing','flickering','spotlight','rim light','volumetric','silhouette','overcast','dusk','dawn','night','day','lighting'] },
+  style:      { p: 50,  label: 'Style', kw: ['ps1','ps2','realistic','photorealistic','cartoon','anime','toon','painterly','cinematic','3d','3d render','render','pixel','pixel art','low poly','retro','vintage','noir','watercolor','oil painting','sketch','comic','manga','hyperrealistic','stylized','grunge','vfx','analog','found footage','style','aesthetic'] },
+  camera:     { p: 40,  label: 'Camera', kw: ['close-up','closeup','wide shot','wide angle','first-person','first person','third-person','top-down','bird','fisheye','depth of field','bokeh','macro','panorama','dutch angle','low angle','high angle','tracking shot','pov','shot','lens','35mm','50mm','85mm'] },
+  effects:    { p: 30,  label: 'Effects', kw: ['grain','film grain','blur','motion blur','particles','vignette','chromatic aberration','glitch','lens flare','dust','smoke','sparks','rain','snow','scanlines','noise','distortion','vfx','effect','effects','bloom'] },
+  detail:     { p: 45,  label: 'Detail', kw: [] }
+};
+
+export const CONFLICTS = [
+  ['realistic','cartoon'], ['photorealistic','cartoon'], ['realistic','anime'], ['photorealistic','anime'],
+  ['realistic','toon'], ['hyperrealistic','pixel'], ['dark','bright'], ['day','night'], ['dawn','dusk'],
+  ['colorful','monochrome'], ['detailed','minimalist'], ['cute','horror'], ['cute','terrifying'],
+  ['peaceful','terrifying'], ['happy','horror'], ['calm','chaotic'], ['clean','grunge']
+];
+
+// Helper functions for parsing
+function tokens(s) {
+  return (s || '').toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter(Boolean);
+}
+
+function hasTerm(text, term) {
+  return (text || '').toLowerCase().includes(term.toLowerCase());
+}
+
+export function categorize(text) {
+  const t = (text || '').toLowerCase();
+  let best = { cat: 'detail', hits: 0, p: CATEGORIES.detail.p };
+  for (const [cat, info] of Object.entries(CATEGORIES)) {
+    if (cat === 'detail') continue;
+    let hits = 0;
+    for (const k of info.kw) {
+      if (t.includes(k)) hits++;
+    }
+    if (hits > best.hits || (hits === best.hits && hits > 0 && info.p > best.p)) {
+      best = { cat, hits, p: info.p };
+    }
+  }
+  return { category: best.cat, priority: CATEGORIES[best.cat].p };
+}
+
+export function contextScore(text, contextText) {
+  const ct = tokens(contextText);
+  const tt = tokens(text);
+  const cset = new Set(ct);
+  let overlap = 0;
+  tt.forEach(w => {
+    if (cset.has(w)) overlap++;
+  });
+
+  const tc = categorize(text).category;
+  let affinity = 0;
+  for (const [cat, info] of Object.entries(CATEGORIES)) {
+    if (cat === tc && cat !== 'detail') {
+      for (const k of info.kw) {
+        if (contextText.toLowerCase().includes(k)) {
+          affinity += 1;
+          break;
+        }
+      }
+    }
+  }
+
+  let penalty = 0;
+  for (const [a, b] of CONFLICTS) {
+    if ((hasTerm(text, a) && hasTerm(contextText, b)) || (hasTerm(text, b) && hasTerm(contextText, a))) {
+      penalty += 3;
+    }
+  }
+
+  return overlap * 2 + affinity + categorize(text).priority / 100 - penalty;
+}
+
+// Builds the topological execution order based on file and prompt-converter dependencies
+export function buildExecutionOrder(nodes, edges) {
+  const gates = nodes.filter(n => ['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptConcat', 'promptToFile'].includes(n.type));
+  
+  // Recursive function to trace upstream gate ID from any node ID along file lines
+  const traceUpstreamGate = (nodeId) => {
+    const e = edges.find(x => x.target === nodeId && x.targetHandle === 'file');
+    if (!e) return null;
+    const src = nodes.find(n => n.id === e.source);
+    if (!src) return null;
+    if (['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptConcat', 'promptToFile'].includes(src.type)) return src.id;
+    if (['fileViewer', 'fileToPrompt'].includes(src.type)) {
+      return traceUpstreamGate(src.id);
+    }
+    return null;
+  };
+
+  // For each gate, map all upstream gate dependencies it must wait for
+  const dependencies = {};
+  gates.forEach(g => {
+    const deps = new Set();
+    
+    // Dependency 1: Direct file input path
+    const fileGate = traceUpstreamGate(g.id);
+    if (fileGate) deps.add(fileGate);
+    
+    // Dependency 2 & 3: Prompt inputs connected to converters, answerQuestions, or promptConcat
+    const incomingPromptEdges = edges.filter(x => x.target === g.id && (['a', 'b'].includes(x.targetHandle) || x.targetHandle.startsWith('p')));
+    incomingPromptEdges.forEach(e => {
+      const src = nodes.find(n => n.id === e.source);
+      if (src) {
+        if (src.type === 'fileToPrompt') {
+          const promptGate = traceUpstreamGate(src.id);
+          if (promptGate) deps.add(promptGate);
+        } else if (src.type === 'fileViewer') {
+          const promptGate = traceUpstreamGate(src.id);
+          if (promptGate) deps.add(promptGate);
+        } else if (src.type === 'answerQuestions') {
+          deps.add(src.id);
+        } else if (src.type === 'promptConcat') {
+          deps.add(src.id);
+        }
+      }
+    });
+
+    // Dependency 4: questions input on askQuestion or answerQuestions
+    if (g.type === 'askQuestion' || g.type === 'answerQuestions') {
+      const qEdge = edges.find(x => x.target === g.id && x.targetHandle === 'questions');
+      if (qEdge) {
+        const src = nodes.find(n => n.id === qEdge.source);
+        if (src && src.type === 'askQuestion') {
+          deps.add(src.id);
+        }
+      }
+    }
+
+    dependencies[g.id] = Array.from(deps);
+  });
+
+  const order = [];
+  const visited = new Set();
+  const temp = new Set();
+
+  function visit(id) {
+    if (visited.has(id) || !gates.find(g => g.id === id)) return;
+    if (temp.has(id)) return; // Prevent loop on cycles
+    
+    temp.add(id);
+    
+    // Visit all transitive gate dependencies first
+    const deps = dependencies[id] || [];
+    deps.forEach(depId => {
+      visit(depId);
+    });
+    
+    temp.delete(id);
+    visited.add(id);
+    order.push(id);
+  }
+
+  gates.forEach(g => visit(g.id));
+  return order;
+}
+
+// Traces the upstream file state recursively from a given target pin
+export function getFileInput(nodes, edges, gateId, gateStates) {
+  const edge = edges.find(e => e.target === gateId && e.targetHandle === 'file');
+  if (!edge) return { positive: '', negative: '' };
+  
+  const sourceNode = nodes.find(sn => sn.id === edge.source);
+  if (!sourceNode) return { positive: '', negative: '' };
+  
+  if (sourceNode.type === 'fileNode') {
+    return { positive: '', negative: '' };
+  }
+  
+  if (['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptToFile', 'promptConcat'].includes(sourceNode.type)) {
+    return gateStates[sourceNode.id] || { positive: '', negative: '' };
+  }
+  
+  if (['fileViewer', 'fileToPrompt'].includes(sourceNode.type)) {
+    return getFileInput(nodes, edges, sourceNode.id, gateStates);
+  }
+  
+  return { positive: '', negative: '' };
+}
+
+// Retrieve prompt text from input pin recursively resolving converters
+function promptInput(nodes, edges, gateId, pinId, gateStates) {
+  const e = edges.find(x => x.target === gateId && x.targetHandle === pinId);
+  if (!e) return null;
+  const src = nodes.find(n => n.id === e.source);
+  if (!src) return null;
+  
+  if (src.type === 'promptBox') {
+    return (src.data.text || '').trim() || null;
+  }
+  
+  if (src.type === 'fileToPrompt') {
+    // Trace back file connection from the converter recursively
+    const traceUpstreamText = (converterId) => {
+      const edge = edges.find(x => x.target === converterId && x.targetHandle === 'file');
+      if (!edge) return '';
+      
+      const sourceNode = nodes.find(n => n.id === edge.source);
+      if (!sourceNode) return '';
+      
+      if (['and', 'or', 'not', 'answerQuestions', 'promptConcat'].includes(sourceNode.type)) {
+        return gateStates[sourceNode.id]?.positive || '';
+      }
+      
+      if (['fileViewer', 'fileToPrompt'].includes(sourceNode.type)) {
+        return traceUpstreamText(sourceNode.id);
+      }
+      
+      return '';
+    };
+    
+    return traceUpstreamText(src.id).trim() || null;
+  }
+
+  if (src.type === 'answerQuestions') {
+    if (e.sourceHandle === 'out') {
+      return (gateStates[src.id]?.prompt_val || '').trim() || null;
+    }
+    return (gateStates[src.id]?.positive || '').trim() || null;
+  }
+
+  if (src.type === 'promptConcat') {
+    return (gateStates[src.id]?.positive || '').trim() || null;
+  }
+  
+  return null;
+}
+
+// Unified API call core using local CORS proxies
+export async function callAI(system, user, settings) {
+  const { provider, keys, models } = settings;
+  const key = keys[provider];
+  const model = models[provider];
+  if (!key) throw new Error(`Missing API Key for ${provider}. Please configure settings.`);
+
+  if (provider === 'anthropic') {
+    const res = await fetch('/api/anthropic/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1024,
+        system,
+        messages: [{ role: 'user', content: user }]
+      })
+    });
+    if (!res.ok) throw new Error(await errText(res));
+    const d = await res.json();
+    return (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+  }
+
+  if (provider === 'openai') {
+    const res = await fetch('/api/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'Authorization': 'Bearer ' + key
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+        temperature: 0.2
+      })
+    });
+    if (!res.ok) throw new Error(await errText(res));
+    const d = await res.json();
+    return d.choices?.[0]?.message?.content || '';
+  }
+
+  if (provider === 'google') {
+    const url = `/api/google/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: [{ text: user }] }],
+        generationConfig: { temperature: 0.2 }
+      })
+    });
+    if (!res.ok) throw new Error(await errText(res));
+    const d = await res.json();
+    return (d.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('') || '';
+  }
+
+  if (provider === 'openrouter') {
+    const res = await fetch('/api/openrouter/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'Authorization': 'Bearer ' + key,
+        'X-Title': 'PLG IDE'
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+        temperature: 0.2
+      })
+    });
+    if (!res.ok) throw new Error(await errText(res));
+    const d = await res.json();
+    return d.choices?.[0]?.message?.content || '';
+  }
+
+  throw new Error('Unknown AI API Provider');
+}
+
+async function errText(res) {
+  let t = '';
+  try {
+    const j = await res.json();
+    t = j.error?.message || j.message || JSON.stringify(j);
+  } catch (e) {
+    t = await res.text().catch(() => '');
+  }
+  return `${res.status} ${t}`.slice(0, 160);
+}
+
+function extractJson(s) {
+  if (!s) return null;
+  s = s.replace(/```json/gi, '').replace(/```/g, '').trim();
+  const a = s.indexOf('{'), b = s.lastIndexOf('}');
+  if (a < 0 || b < 0) return null;
+  try {
+    return JSON.parse(s.slice(a, b + 1));
+  } catch (e) {
+    return null;
+  }
+}
+
+// ------------------------------------------------------------
+// NODE-BY-NODE ACTIVE AI GATES ACTIONS
+// ------------------------------------------------------------
+
+// 1. AI Conjunction (AND) Gate execution
+async function aiGateAnd(baselinePos, A, B, settings) {
+  const system = `You are the AI compiler for an "AND Gate" inside a visual prompt-building IDE. Your job is to take the current positive prompt baseline and merge it with two new prompt fragments (A and B). You must merge them into a single, cohesive positive prompt: (1) rank foundational elements (subjects, environments) first, style/modifiers later; (2) remove duplicates or highly redundant statements; (3) maintain proper flow. Respond with ONLY the optimized, merged positive prompt text, no markdown, no quotes, no extra commentary.`;
+  const user = `Baseline Positive Prompt So Far:\n"${baselinePos || '(empty)'}"\n\nNew Fragment A: "${A || '(none)'}"\nNew Fragment B: "${B || '(none)'}"\n\nReturn the merged prompt:`;
+  const raw = await callAI(system, user, settings);
+  return (raw || '').trim();
+}
+
+// 2. AI Context Selector (OR) Gate execution
+async function aiGateOr(baselinePos, A, B, settings) {
+  const system = `You are the AI compiler for an "OR Gate" inside a visual prompt-building IDE. Your job is to read the current positive prompt context and evaluate two competing candidate prompt fragments (A and B). You must select the SINGLE best candidate that is most semantically compatible with the current context, explain your choice in one sentence, and output the updated positive prompt. Respond with STRICT JSON in this format: {"selected": "A" or "B", "reason": "Your brief explanation", "updated_prompt": "The consolidated prompt including the chosen candidate"}`;
+  const user = `Baseline Positive Prompt Context So Far:\n"${baselinePos || '(empty)'}"\n\nCandidate Prompt A: "${A || '(none)'}"\nCandidate Prompt B: "${B || '(none)'}"\n\nReturn JSON:`;
+  const raw = await callAI(system, user, settings);
+  const json = extractJson(raw);
+  if (!json || !json.selected) throw new Error('Bad OR Gate AI JSON structure');
+  return json;
+}
+
+// 3. AI Negative Control (NOT) Gate execution
+async function aiGateNot(baselinePos, A, settings) {
+  const system = `You are the AI compiler for a "NOT Gate" inside a visual prompt-building IDE. Your job is to read the current positive prompt baseline and a concept to suppress (A). You must: (1) strip any trace or reference of A from the positive prompt if it exists, (2) recommend negative prompt exclusions to keep A suppressed. Respond with STRICT JSON in this format: {"updated_positive": "The sanitized positive prompt", "negative_additions": ["list", "of", "negative", "terms"]}`;
+  const user = `Baseline Positive Prompt:\n"${baselinePos || '(empty)'}"\n\nConcept to Suppress (NOT A): "${A || '(none)'}"\n\nReturn JSON:`;
+  const raw = await callAI(system, user, settings);
+  const json = extractJson(raw);
+  if (!json || !json.updated_positive) throw new Error('Bad NOT Gate AI JSON structure');
+  return json;
+}
+
+const MOCK_QUESTIONS = [
+  "What is the desired primary subject focus or perspective of the generation?",
+  "Are there specific color palettes, mood variables, or lighting constraints to prioritize?",
+  "What stylistic medium or resolution characteristics should be enforced?"
+];
+
+const ALT_MOCK_QUESTIONS = [
+  "What time of day or atmospheric weather effects should be present in the scene?",
+  "Are there any secondary background elements, props, or characters to place?",
+  "Should the visual style emulate a specific director, artist, or historical era?"
+];
+
+function offlineMockQuestions(excludedQs, count) {
+  const bank = [
+    "What is the desired primary subject focus or perspective of the generation?",
+    "Are there specific color palettes, mood variables, or lighting constraints to prioritize?",
+    "What stylistic medium or resolution characteristics should be enforced?",
+    "What time of day or atmospheric weather effects should be present in the scene?",
+    "Are there any secondary background elements, props, or characters to place?",
+    "Should the visual style emulate a specific director, artist, or historical era?",
+    "What specific camera framing, lens focal length, or viewing angle should be used?",
+    "What kind of visual effects, grain, vignette, or post-processing is preferred?",
+    "Is there a specific level of detail, roughness, or cleanliness expected?",
+    "Are there negative elements or objects that must be completely absent?"
+  ];
+  
+  const excludedSet = new Set((excludedQs || []).map(s => s.toLowerCase().trim()));
+  const filtered = bank.filter(q => !excludedSet.has(q.toLowerCase().trim()));
+  return filtered.slice(0, count);
+}
+
+// AI Clarification Questions generator
+async function aiAskQuestions(baselinePos, excludedQs, count, settings) {
+  let system = `You are an expert AI prompt engineer. Your job is to analyze the positive prompt compiled so far, identify any gaps, ambiguities, or unclear stylistic directions, and generate a list of exactly ${count} crucial clarifying questions that the user should answer to make the prompt perfect.
+If the prompt is empty or very short, ask foundational questions about what the user wants to create.
+You must respond with STRICT JSON containing a list of strings: {"questions": ["Clarifying question 1", ..., "Clarifying question ${count}"]}. No commentary, no markdown.`;
+
+  if (excludedQs && excludedQs.length > 0) {
+    system += `\n\nCRITICAL CONSTRAINT: You MUST NOT ask any questions that are semantically identical or highly similar to the following questions which have ALREADY been asked:\n${excludedQs.map((q, i) => `- ${q}`).join('\n')}\nGenerate ${count} entirely NEW and different questions.`;
+  }
+
+  const user = `Positive Prompt So Far:\n"${baselinePos || 'empty baseline'}"\n\nReturn JSON:`;
+  const raw = await callAI(system, user, settings);
+  const json = extractJson(raw);
+  if (!json || !Array.isArray(json.questions)) throw new Error('Bad questions list JSON structure');
+  return json.questions;
+}
+
+// AI Refinement of prompt based on questions and answers
+async function aiRefineAnswers(baselinePos, questions, answers, settings) {
+  const system = `You are an expert AI prompt engineer. Your job is to take a baseline positive prompt, a list of clarifying questions, and the user's typed answers, and synthesize them into a single, cohesive, highly optimized positive prompt.
+You must:
+1. Merge the answers naturally and seamlessly into the flow of the baseline prompt.
+2. Maintain proper structure (foundational details first, modifier elements later).
+3. Do NOT include the questions or literal "Clarification on Q..." strings. Just output the refined, integrated prompt text.
+4. Keep the output extremely clean. Respond with ONLY the optimized, merged positive prompt text. No markdown, no quotes, no extra commentary.`;
+
+  const qas = [];
+  questions.forEach((q, idx) => {
+    const ans = answers[idx] || '';
+    if (ans.trim()) {
+      qas.push(`Question: "${q}"\nAnswer: "${ans}"`);
+    }
+  });
+
+  const user = `Baseline Positive Prompt:\n"${baselinePos || '(empty)'}"\n\nUser Answers to Clarifications:\n${qas.join('\n\n')}\n\nReturn the refined, integrated positive prompt:`;
+  const raw = await callAI(system, user, settings);
+  return (raw || '').trim();
+}
+
+// ------------------------------------------------------------
+// MAIN DYNAMIC NODE-BY-NODE COMPILER ENGINE
+// ------------------------------------------------------------
+
+export async function compileGraph(nodes, edges, settings) {
+  const stages = [];
+  const items = [];
+  const neg = [];
+  const gateStates = {}; // Track intermediate prompt states after each gate executes
+  
+  // Current active prompt state as compilation flows node-by-node
+  let activePositive = '';
+  let activeNegative = '';
+
+  const fileNode = nodes.find(n => n.type === 'fileNode');
+  const gates = nodes.filter(n => ['and', 'or', 'not', 'askQuestion', 'answerQuestions'].includes(n.type));
+
+  if (!fileNode) {
+    throw new Error('Missing File Node: Please add a File Node as the single source of truth.');
+  }
+  if (!gates.length) {
+    throw new Error('No logic nodes added: Please add at least one logic node (AND, OR, NOT, Ask Questions, or Provide Answers) to execute prompt logic.');
+  }
+
+  // 1. Stage 0: Initial Memory Read from source
+  stages.push({
+    name: `File Node (${fileNode.data.filename || 'prompt.txt'})`,
+    status: 'ok',
+    type: 'info',
+    desc: `Source of truth initialized.\nBaseline Positive: "${activePositive || '(empty)'}"\nBaseline Negative: "${activeNegative || '(empty)'}"`
+  });
+
+  // Get topological execution path
+  const order = buildExecutionOrder(nodes, edges);
+
+  // 2. Walk gates in order of graph dependencies (node-by-node)
+  for (const [idx, gid] of order.entries()) {
+    const g = nodes.find(n => n.id === gid);
+    const A = promptInput(nodes, edges, gid, 'a', gateStates);
+    const B = promptInput(nodes, edges, gid, 'b', gateStates);
+
+    const gateTitle = g.type.toUpperCase();
+    const nodeLabel = `Node ${idx + 2}: ${gateTitle} Gate (${g.id.slice(-6)})`;
+
+    let traceDesc = '';
+    let statusType = 'ok';
+    let statusLabel = 'ok';
+
+    // Retrieve localized baseline from connected file input pin
+    const fileInput = getFileInput(nodes, edges, gid, gateStates);
+    activePositive = fileInput.positive;
+    activeNegative = fileInput.negative;
+
+    // Special fallback for AnswerQuestions if file input is not connected but questions pin is
+    if (g.type === 'answerQuestions' && !edges.some(e => e.target === gid && e.targetHandle === 'file')) {
+      const qEdge = edges.find(e => e.target === gid && e.targetHandle === 'questions');
+      if (qEdge) {
+        const sourceGateState = gateStates[qEdge.source];
+        if (sourceGateState) {
+          activePositive = sourceGateState.positive || '';
+          activeNegative = sourceGateState.negative || '';
+        }
+      }
+    }
+
+    try {
+      // ----------------- AND GATE LOGIC -----------------
+      if (g.type === 'and') {
+        const cands = [A, B].filter(Boolean);
+        cands.forEach(txt => {
+          items.push({ text: txt, ...categorize(txt), by: `AND (${g.id.slice(-4)})` });
+        });
+
+        if (settings.mode === 'ai') {
+          // Trigger AND Gate AI
+          const merged = await aiGateAnd(activePositive, A, B, settings);
+          activePositive = merged;
+          traceDesc = `[AI Active Conjunction]\nBaseline: "${activePositive}"\nMerged input A: "${A || 'none'}" + B: "${B || 'none'}"\nResulting Positive Prompt:\n"${activePositive}"`;
+          statusType = 'ai';
+          statusLabel = 'ai';
+        } else {
+          // Offline Rule-based AND logic
+          const activeArr = activePositive ? activePositive.split(', ').map(s => s.trim()) : [];
+          cands.forEach(c => {
+            if (c && !activeArr.includes(c)) activeArr.push(c);
+          });
+          // Sort active arrays based on categories weight
+          const analyzed = activeArr.map(t => ({ text: t, ...categorize(t) }));
+          analyzed.sort((x, y) => y.priority - x.priority);
+          
+          activePositive = analyzed.map(x => x.text).join(', ');
+          traceDesc = `[Rule-based Conjunction]\nMerged input A: "${A || 'none'}" + B: "${B || 'none'}" in priority order.\nResulting Positive Prompt:\n"${activePositive}"`;
+        }
+      } 
+      // ----------------- OR GATE LOGIC -----------------
+      else if (g.type === 'or') {
+        const cands = [A, B].filter(Boolean);
+        
+        if (cands.length) {
+          if (settings.mode === 'ai') {
+            // Trigger OR Gate AI Context selection
+            const json = await aiGateOr(activePositive, A, B, settings);
+            activePositive = json.updated_prompt;
+            items.push({ 
+              text: json.selected === 'A' ? A : B, 
+              ...categorize(json.selected === 'A' ? A : B), 
+              by: `OR (${g.id.slice(-4)})` 
+            });
+            
+            traceDesc = `[AI Context Selection]\nSelected Candidate: ${json.selected} ("${json.selected === 'A' ? A : B}")\nReasoning: "${json.reason}"\nResulting Positive Prompt:\n"${activePositive}"`;
+            statusType = 'ai';
+            statusLabel = 'ai';
+          } else {
+            // Offline Context Overlap Score
+            let best = cands[0], bs = -1e9;
+            cands.forEach(t => {
+              const s = contextScore(t, activePositive);
+              if (s > bs) {
+                bs = s;
+                best = t;
+              }
+            });
+
+            items.push({ text: best, ...categorize(best), by: `OR (${g.id.slice(-4)})` });
+            const dropped = cands.filter(t => t !== best);
+            
+            const activeArr = activePositive ? activePositive.split(', ').map(s => s.trim()) : [];
+            if (!activeArr.includes(best)) activeArr.push(best);
+            
+            activePositive = activeArr.join(', ');
+            traceDesc = `[Rule-based Selection]\nEvaluated context overlap score (A vs B).\nSelected best fit: "${best}"\nDropped candidate: ${dropped.length ? dropped.map(x => `"${x}"`).join(', ') : 'none'}\nResulting Positive Prompt:\n"${activePositive}"`;
+          }
+        } else {
+          traceDesc = `[OR Gate skipped: No input prompts attached]`;
+        }
+      } 
+      // ----------------- NOT GATE LOGIC -----------------
+      else if (g.type === 'not') {
+        if (A) {
+          if (settings.mode === 'ai') {
+            // Trigger NOT Gate AI Negation routing
+            const json = await aiGateNot(activePositive, A, settings);
+            activePositive = json.updated_positive;
+            
+            // Add negative items
+            json.negative_additions.forEach(term => {
+              if (term && !neg.find(n => n.text === term)) {
+                neg.push({ text: term, by: `NOT AI (${g.id.slice(-4)})` });
+              }
+            });
+            
+            activeNegative = neg.map(x => x.text).join(', ');
+            traceDesc = `[AI Negation routing]\nSuppressed concept: "${A}"\nPositive Sanitized: "${activePositive}"\nNegative recommended: [${json.negative_additions.join(', ')}]\nResulting Negative Prompt:\n"${activeNegative}"`;
+            statusType = 'ai';
+            statusLabel = 'ai';
+          } else {
+            // Offline negative suppression
+            // Strip term if literally present in positive string
+            const activeArr = activePositive ? activePositive.split(', ').map(s => s.trim()) : [];
+            const sanitized = activeArr.filter(t => !hasTerm(t, A));
+            activePositive = sanitized.join(', ');
+            
+            if (!neg.find(n => n.text === A)) {
+              neg.push({ text: A, by: `NOT (${g.id.slice(-4)})` });
+            }
+            activeNegative = neg.map(x => x.text).join(', ');
+            traceDesc = `[Rule-based Negation]\nSuppressed concept: "${A}". Concept stripped from positive memory (if found).\nResulting Negative Prompt:\n"${activeNegative}"`;
+          }
+        } else {
+          traceDesc = `[NOT Gate skipped: No suppression prompt attached]`;
+        }
+      }
+      // ----------------- ASK QUESTION LOGIC -----------------
+      else if (g.type === 'askQuestion') {
+        let qs = [];
+        const existingQs = g.data?.questions || [];
+        const numRequested = g.data?.numQuestions !== undefined ? g.data.numQuestions : 3;
+        
+        // Find connected upstream askQuestion node to get excluded questions
+        const exEdge = edges.find((x) => x.target === gid && x.targetHandle === 'questions');
+        const excludedQs = exEdge ? (gateStates[exEdge.source]?.questions || []) : [];
+        
+        if (existingQs.length === numRequested) {
+          qs = existingQs;
+          traceDesc = `[Ask AI Questions Node - Reused Existing]\nReused all ${qs.length} clarifying questions to maintain consistency.`;
+          statusType = 'info';
+          statusLabel = 'ok';
+        } else if (existingQs.length > numRequested) {
+          qs = existingQs.slice(0, numRequested);
+          traceDesc = `[Ask AI Questions Node - Sliced Existing]\nQuestions count decreased from ${existingQs.length} to ${numRequested}. Kept first ${numRequested} questions.`;
+          statusType = 'info';
+          statusLabel = 'ok';
+        } else {
+          // existingQs.length < numRequested: generate only the difference
+          const diff = numRequested - existingQs.length;
+          let newQs = [];
+          
+          if (settings.mode === 'ai') {
+            newQs = await aiAskQuestions(activePositive, [...existingQs, ...excludedQs], diff, settings);
+          } else {
+            newQs = offlineMockQuestions([...existingQs, ...excludedQs], diff);
+          }
+          
+          qs = [...existingQs, ...newQs];
+          traceDesc = `[Ask AI Questions Node - Appended New]\nAdded ${diff} new clarifying questions, preserving previous ${existingQs.length} questions.\nTotal list size: ${qs.length} questions.`;
+          statusType = 'ai';
+          statusLabel = 'ai';
+        }
+        
+        gateStates[gid] = { ...(gateStates[gid] || {}), questions: qs };
+      }
+
+      // ----------------- ANSWER QUESTIONS LOGIC -----------------
+      else if (g.type === 'answerQuestions') {
+        const qEdge = edges.find((x) => x.target === gid && x.targetHandle === 'questions');
+        let qs = [];
+        if (qEdge) {
+          qs = gateStates[qEdge.source]?.questions || [];
+        }
+        
+        const answers = g.data?.answers || {};
+        let answerPrompt = '';
+        let combinedVal = '';
+        
+        if (settings.mode === 'ai') {
+          // In AI mode, use AI to refine the baseline prompt using the Q&A context
+          const activeArr = [];
+          qs.forEach((q, idx) => {
+            if (answers[idx] && answers[idx].trim()) activeArr.push({ q, a: answers[idx].trim() });
+          });
+          
+          if (activeArr.length > 0) {
+            combinedVal = await aiRefineAnswers(activePositive, qs, answers, settings);
+            answerPrompt = combinedVal;
+          } else {
+            combinedVal = activePositive;
+            answerPrompt = '';
+          }
+        } else {
+          // In offline rule-based mode, join typed answers directly with commas to save tokens
+          const ansArr = [];
+          qs.forEach((q, idx) => {
+            const ans = answers[idx] || '';
+            if (ans.trim()) {
+              ansArr.push(ans.trim());
+            }
+          });
+          answerPrompt = ansArr.join(', ');
+          combinedVal = activePositive 
+            ? (answerPrompt.trim() ? activePositive + ', ' + answerPrompt : activePositive)
+            : answerPrompt;
+        }
+        
+        // Check which output pins are connected downstream
+        const fileOutEdge = edges.find((x) => x.source === gid && x.sourceHandle === 'file');
+        const promptOutEdge = edges.find((x) => x.source === gid && x.sourceHandle === 'out');
+        
+        if (fileOutEdge || !promptOutEdge) {
+          // If file out pin is connected, or if nothing is connected (Baseline mode), update activePositive
+          activePositive = combinedVal;
+        }
+        
+        gateStates[gid] = { 
+          ...(gateStates[gid] || {}), 
+          positive: combinedVal, 
+          negative: activeNegative,
+          prompt_val: answerPrompt 
+        };
+        
+        if (fileOutEdge) {
+          traceDesc = settings.mode === 'ai'
+            ? `[Answer Questions Node - AI Mode]\nAI refined the baseline using the Q&A context:\n"${combinedVal}"`
+            : `[Answer Questions Node - Rule Mode]\nAnswers joined with commas and appended to baseline:\n"${combinedVal}"`;
+          statusType = settings.mode === 'ai' ? 'ai' : 'info';
+          statusLabel = 'ok';
+        } else if (promptOutEdge) {
+          traceDesc = settings.mode === 'ai'
+            ? `[Answer Questions Node - AI Mode]\nRefined prompt fragment:\n"${answerPrompt || '(no answers)'}"`
+            : `[Answer Questions Node - Rule Mode]\nAnswers output downstream as a prompt fragment:\n"${answerPrompt || '(no answers)'}"`;
+          statusType = 'info';
+          statusLabel = 'ok';
+        } else {
+          traceDesc = settings.mode === 'ai'
+            ? `[Answer Questions Node - AI Mode]\nAI refined the baseline prompt directly:\n"${combinedVal}"`
+            : `[Answer Questions Node - Rule Mode]\nAnswers appended to baseline prompt:\n"${combinedVal}"`;
+          statusType = settings.mode === 'ai' ? 'ai' : 'info';
+          statusLabel = 'ok';
+        }
+      }
+      // ----------------- PROMPT CONCAT LOGIC -----------------
+      else if (g.type === 'promptConcat') {
+        const numInputs = g.data?.numInputs !== undefined ? g.data.numInputs : 2;
+        const pieces = [];
+        for (let i = 0; i < numInputs; i++) {
+          const val = promptInput(nodes, edges, gid, `p${i}`, gateStates);
+          if (val && val.trim()) {
+            pieces.push(val.trim());
+          }
+        }
+        const joined = pieces.join(', ');
+        gateStates[gid] = { positive: joined, negative: '' };
+        traceDesc = `[Prompt Concat Operator]\nJoined ${pieces.length} active prompt inputs with comma:\n"${joined || '(empty)'}"`;
+        statusType = 'info';
+        statusLabel = 'ok';
+      }
+      // ----------------- PROMPT TO FILE LOGIC -----------------
+      else if (g.type === 'promptToFile') {
+        const promptVal = promptInput(nodes, edges, gid, 'prompt', gateStates) || '';
+        activePositive = promptVal;
+        activeNegative = ''; // Resets negative baseline upon overwrite
+        gateStates[gid] = { positive: activePositive, negative: activeNegative };
+        traceDesc = `[Prompt to File Converter]\nRewrote file flow baseline prompt directly to:\n"${activePositive}"`;
+        statusType = 'info';
+        statusLabel = 'ok';
+      }
+
+      // Record successful trace stage
+      stages.push({
+        name: nodeLabel,
+        status: statusLabel,
+        type: statusType,
+        desc: traceDesc
+      });
+
+    } catch (err) {
+      // Record gate error and fall back to local rules
+      statusLabel = 'error';
+      statusType = 'err';
+      
+      // Local fallback in case AI call fails
+      const fallbackDesc = `✕ AI Call Failed for ${gateTitle}. Falling back to Rule-based logic.\nError: ${err.message}`;
+      stages.push({
+        name: `${nodeLabel} — FAILED`,
+        status: 'error',
+        type: 'err',
+        desc: fallbackDesc
+      });
+      
+      // Offline fallback trigger
+      const cands = [A, B].filter(Boolean);
+      if (g.type === 'and') {
+        const activeArr = activePositive ? activePositive.split(', ').map(s => s.trim()) : [];
+        cands.forEach(c => { if (c && !activeArr.includes(c)) activeArr.push(c); });
+        activePositive = activeArr.join(', ');
+      } else if (g.type === 'or') {
+        if (cands.length) {
+          let best = cands[0], bs = -1e9;
+          cands.forEach(t => {
+            const s = contextScore(t, activePositive);
+            if (s > bs) { bs = s; best = t; }
+          });
+          const activeArr = activePositive ? activePositive.split(', ').map(s => s.trim()) : [];
+          if (!activeArr.includes(best)) activeArr.push(best);
+          activePositive = activeArr.join(', ');
+        }
+      } else if (g.type === 'not') {
+        if (A) {
+          const activeArr = activePositive ? activePositive.split(', ').map(s => s.trim()) : [];
+          const sanitized = activeArr.filter(t => !hasTerm(t, A));
+          activePositive = sanitized.join(', ');
+          if (!neg.find(n => n.text === A)) neg.push({ text: A, by: `NOT Fallback` });
+          activeNegative = neg.map(x => x.text).join(', ');
+        }
+      } else if (g.type === 'askQuestion') {
+        const qs = [...MOCK_QUESTIONS];
+        gateStates[gid] = { ...(gateStates[gid] || {}), questions: qs };
+      } else if (g.type === 'answerQuestions') {
+        const qEdge = edges.find((x) => x.target === gid && x.targetHandle === 'questions');
+        const qs = qEdge ? (gateStates[qEdge.source]?.questions || []) : [];
+        const answers = g.data?.answers || {};
+        
+        // Fallback rule mode: concatenate typed answers directly with commas to save tokens
+        const ansArr = [];
+        qs.forEach((q, idx) => {
+          const ans = answers[idx] || '';
+          if (ans.trim()) {
+            ansArr.push(ans.trim());
+          }
+        });
+        const answerPrompt = ansArr.join(', ');
+        const combinedVal = activePositive 
+          ? (answerPrompt.trim() ? activePositive + ', ' + answerPrompt : activePositive)
+          : answerPrompt;
+        
+        const fileOutEdge = edges.find((x) => x.source === gid && x.sourceHandle === 'file');
+        const promptOutEdge = edges.find((x) => x.source === gid && x.sourceHandle === 'out');
+        
+        if (fileOutEdge || !promptOutEdge) {
+          activePositive = combinedVal;
+        }
+        
+        gateStates[gid] = { 
+          ...(gateStates[gid] || {}), 
+          positive: combinedVal, 
+          negative: activeNegative,
+          prompt_val: answerPrompt 
+        };
+      } else if (g.type === 'promptConcat') {
+        const numInputs = g.data?.numInputs !== undefined ? g.data.numInputs : 2;
+        const pieces = [];
+        for (let i = 0; i < numInputs; i++) {
+          const val = promptInput(nodes, edges, gid, `p${i}`, gateStates);
+          if (val && val.trim()) {
+            pieces.push(val.trim());
+          }
+        }
+        const joined = pieces.join(', ');
+        gateStates[gid] = { ...(gateStates[gid] || {}), positive: joined, negative: '' };
+      } else if (g.type === 'promptToFile') {
+        const promptVal = promptInput(nodes, edges, gid, 'prompt', gateStates) || '';
+        activePositive = promptVal;
+        activeNegative = '';
+        gateStates[gid] = { ...(gateStates[gid] || {}), positive: activePositive, negative: activeNegative };
+      }
+    }
+    // Record intermediate compiled state at this gate node in topological chain
+    gateStates[gid] = {
+      ...(gateStates[gid] || {}),
+      positive: activePositive,
+      negative: activeNegative
+    };
+  }
+
+  // 3. Stage Final: Conflict detection on final reordered array
+  const activeArr = activePositive ? activePositive.split(', ').map(s => s.trim()) : [];
+  const mappedItems = activeArr.map(t => {
+    const existing = items.find(i => i.text === t);
+    return existing || { text: t, ...categorize(t), by: 'Pipeline Flow' };
+  });
+
+  // Apply final static conflict checks
+  let resolvedCount = 0;
+  for (const [a, b] of CONFLICTS) {
+    const ia = mappedItems.findIndex(p => hasTerm(p.text, a));
+    const ib = mappedItems.findIndex(p => hasTerm(p.text, b));
+    if (ia >= 0 && ib >= 0 && ia !== ib) {
+      const lo = mappedItems[ia].priority <= mappedItems[ib].priority ? ia : ib;
+      if (!mappedItems[lo]._drop) {
+        mappedItems[lo]._drop = `Conflicts with higher priority term: “${lo === ia ? b : a}”`;
+        resolvedCount++;
+      }
+    }
+  }
+
+  // Reorder final items
+  mappedItems.sort((x, y) => {
+    if (x._drop && !y._drop) return 1;
+    if (!x._drop && y._drop) return -1;
+    return y.priority - x.priority;
+  });
+
+  const finalKept = mappedItems.filter(x => !x._drop).map(x => x.text).join(', ');
+
+  stages.push({
+    name: 'Final De-conflict & Format',
+    status: 'ok',
+    type: resolvedCount ? 'ok' : 'info',
+    desc: resolvedCount 
+      ? `Resolved ${resolvedCount} static semantic conflicts.\nFinal Positive: "${finalKept}"\nFinal Negative: "${activeNegative || 'none'}"`
+      : `Prompt reordering finalized.\nFinal Positive: "${finalKept}"\nFinal Negative: "${activeNegative || 'none'}"`
+  });
+
+  return {
+    positive: finalKept,
+    negative: activeNegative,
+    items: mappedItems,
+    neg: neg,
+    stages,
+    aiUsed: settings.mode === 'ai',
+    gateStates
+  };
+}
