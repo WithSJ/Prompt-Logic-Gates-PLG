@@ -893,23 +893,182 @@ export async function compileGraph(nodes, edges, settings) {
   });
 
   const finalKept = mappedItems.filter(x => !x._drop).map(x => x.text).join(', ');
+  const keptOnly = mappedItems.filter(x => !x._drop);
+
+  // Apply compilation depth formatting (Normal, Thinking, DeepThinking)
+  const { compilationMode = 'normal' } = settings;
+  let formattedPositive = finalKept;
+
+  if (compilationMode === 'thinking') {
+    if (settings.mode === 'ai') {
+      try {
+        const systemPrompt = `You are a professional prompt architect. Your task is to take a raw list of prompt tokens and rephrase them into a cohesive, natural, highly detailed, and beautifully styled positive prompt. Enhance the visual descriptors, vocabulary, and sensory details while retaining all original concepts. Output ONLY the rephrased prompt itself, with NO quotes, NO introductory text, and NO markdown.`;
+        const userPrompt = `Raw Prompt elements: ${finalKept}`;
+        const rephrased = await callAI(systemPrompt, userPrompt, settings);
+        if (rephrased && rephrased.trim()) {
+          formattedPositive = rephrased.trim();
+        }
+      } catch (err) {
+        console.error("Thinking AI generation failed, falling back to rule-based: ", err);
+        formattedPositive = offlineThinkingRephrase(keptOnly);
+      }
+    } else {
+      formattedPositive = offlineThinkingRephrase(keptOnly);
+    }
+  } else if (compilationMode === 'deep-thinking') {
+    if (settings.mode === 'ai') {
+      try {
+        const systemPrompt = `You are a principal prompt architect and visual director. Your task is to compile the given visual prompt elements into an exhaustive, highly structured prompt specification document. 
+        Organize the output into these distinct sections using a premium Markdown layout:
+        
+        # VISUAL SPECIFICATION DOCUMENT
+        
+        ## 1. PRIMARY SUBJECT & DIRECTIVES
+        - **Focus**: [Subject details]
+        - **Action/Narrative**: [Vivid description of subject actions]
+        - **Emotional Profile**: [Expressions and mood]
+        
+        ## 2. ENVIRONMENT & SPACE
+        - **Location & Architecture**: [Spatial settings and background elements]
+        - **Atmosphere & Depth**: [Climate, depth levels, and environmental details]
+        
+        ## 3. LIGHTING & COMPOSITION
+        - **Lighting setup**: [Types, directions, colors, and shadows]
+        - **Camera Framing**: [Shot type, lens, angle, and distance]
+        
+        ## 4. STYLE & TECHNICAL ARTISTRY
+        - **Art Medium**: [Style description, artistic emulations]
+        - **Effects & Grading**: [Grain, lens effects, particles, post-processing]
+        
+        ## 5. NEGATIVE INHIBITIONS
+        - **Explicitly Suppress**: [Instruct to avoid these negative concepts: ${activeNegative}]
+        
+        Integrate all raw prompt elements naturally. Do not include meta-commentary or preambles. Output ONLY the beautifully structured Markdown specifications block.`;
+        
+        const userPrompt = `Raw Positive Prompt elements: ${finalKept}\nNegative Prompt: ${activeNegative}`;
+        const rephrased = await callAI(systemPrompt, userPrompt, settings);
+        if (rephrased && rephrased.trim()) {
+          formattedPositive = rephrased.trim();
+        }
+      } catch (err) {
+        console.error("DeepThinking AI generation failed, falling back to rule-based: ", err);
+        formattedPositive = offlineDeepThinkingSpec(keptOnly, activeNegative);
+      }
+    } else {
+      formattedPositive = offlineDeepThinkingSpec(keptOnly, activeNegative);
+    }
+  }
 
   stages.push({
     name: 'Final De-conflict & Format',
     status: 'ok',
-    type: resolvedCount ? 'ok' : 'info',
-    desc: resolvedCount 
-      ? `Resolved ${resolvedCount} static semantic conflicts.\nFinal Positive: "${finalKept}"\nFinal Negative: "${activeNegative || 'none'}"`
-      : `Prompt reordering finalized.\nFinal Positive: "${finalKept}"\nFinal Negative: "${activeNegative || 'none'}"`
+    type: compilationMode !== 'normal' ? 'ai' : (resolvedCount ? 'ok' : 'info'),
+    desc: `Compilation Mode: ${compilationMode.toUpperCase()}\n` + (resolvedCount 
+      ? `Resolved ${resolvedCount} static semantic conflicts.\nFinal Positive: "${formattedPositive.slice(0, 150)}${formattedPositive.length > 150 ? '...' : ''}"\nFinal Negative: "${activeNegative || 'none'}"`
+      : `Prompt reordering finalized.\nFinal Positive: "${formattedPositive.slice(0, 150)}${formattedPositive.length > 150 ? '...' : ''}"\nFinal Negative: "${activeNegative || 'none'}"`)
   });
 
   return {
-    positive: finalKept,
+    positive: formattedPositive,
     negative: activeNegative,
     items: mappedItems,
     neg: neg,
     stages,
-    aiUsed: settings.mode === 'ai',
+    aiUsed: settings.mode === 'ai' || compilationMode !== 'normal',
     gateStates
   };
 }
+
+// ------------------------------------------------------------
+// OFFLINE HIGH-FIDELITY TEMPLATE BUILDERS
+// ------------------------------------------------------------
+
+function offlineThinkingRephrase(items) {
+  const groups = {
+    subject: [],
+    environment: [],
+    action: [],
+    emotion: [],
+    lighting: [],
+    style: [],
+    camera: [],
+    effects: [],
+    detail: []
+  };
+  items.forEach(item => {
+    if (groups[item.category]) {
+      groups[item.category].push(item.text);
+    }
+  });
+  
+  const subjectPart = groups.subject.length > 0 ? groups.subject.join(' and ') : 'a focused subject';
+  const actionPart = groups.action.length > 0 ? `, actively ${groups.action.join(', ')}` : '';
+  const envPart = groups.environment.length > 0 ? ` set within a highly detailed ${groups.environment.join(', ')}` : '';
+  const emotionPart = groups.emotion.length > 0 ? `, evoking a strong sense of ${groups.emotion.join(' and ')}` : '';
+  const lightingPart = groups.lighting.length > 0 ? `. The scene is beautifully illuminated with ${groups.lighting.join(', ')} lighting` : '';
+  const cameraPart = groups.camera.length > 0 ? `, captured from a stunning ${groups.camera.join(', ')} perspective` : '';
+  const stylePart = groups.style.length > 0 ? `. The artistic aesthetic is rendered in ${groups.style.join(', ')} style` : '';
+  const effectsPart = groups.effects.length > 0 ? ` with subtle ${groups.effects.join(', ')} visual effects` : '';
+  const detailsPart = groups.detail.length > 0 ? `. Enriched with intricate details including ${groups.detail.join(', ')}` : '';
+  
+  return `A masterpiece showcasing ${subjectPart}${actionPart}${envPart}${emotionPart}${lightingPart}${cameraPart}${stylePart}${effectsPart}${detailsPart}.`.replace(/\s+/g, ' ');
+}
+
+function offlineDeepThinkingSpec(items, negativeText) {
+  const groups = {
+    subject: [],
+    environment: [],
+    action: [],
+    emotion: [],
+    lighting: [],
+    style: [],
+    camera: [],
+    effects: [],
+    detail: []
+  };
+  items.forEach(item => {
+    if (groups[item.category]) {
+      groups[item.category].push(item.text);
+    }
+  });
+
+  const formatList = (arr) => arr.length > 0 ? arr.map(x => `* ${x}`).join('\n') : '* (Not specified)';
+
+  return `# VISUAL SPECIFICATION DOCUMENT (PLG OFFLINE COMPILER)
+
+## 1. PRIMARY SUBJECT & DIRECTIVES
+### Core Subjects
+${formatList(groups.subject)}
+
+### Active Behaviors & Actions
+${formatList(groups.action)}
+
+### Emotional & Atmospheric Profile
+${formatList(groups.emotion)}
+
+## 2. ENVIRONMENT & SPACE
+### Setting Details
+${formatList(groups.environment)}
+
+## 3. LIGHTING & COMPOSITION
+### Lighting Guidelines
+${formatList(groups.lighting)}
+
+### Camera Composition
+${formatList(groups.camera)}
+
+## 4. STYLE & TECHNICAL ARTISTRY
+### Artistic Style
+${formatList(groups.style)}
+
+### Lens & Render Effects
+${formatList(groups.effects)}
+
+### Fine-grain Details
+${formatList(groups.detail)}
+
+## 5. NEGATIVE INHIBITIONS
+### Suppressed Concepts
+${negativeText ? negativeText.split(', ').map(x => `* **AVOID**: ${x}`).join('\n') : '* None suppressed'}`;
+}
+

@@ -208,3 +208,61 @@ When Ask AI Questions runs in rule-based mode, it draws from this hardcoded bank
 8. What kind of visual effects, grain, vignette, or post-processing is preferred?
 9. Is there a specific level of detail, roughness, or cleanliness expected?
 10. Are there negative elements or objects that must be completely absent?
+
+---
+
+## 7. Multi-Depth Compilation Formatting
+
+The PLG semantic compiler implements three Compilation Depth settings. These modes format the final compiled prompt in varying structures and styles depending on the user's needs.
+
+### Normal Mode (Raw Element Assembly)
+*   **Purpose**: Returns the compiled visual prompt elements sorted strictly by their semantic category priority weights.
+*   **Behavior**: Combines the kept (de-conflicted) prompt elements into a flat comma-separated list of visual tokens.
+*   **Output Example**: `"abandoned hospital, corridor, standing, dark, neon lighting, ps1 style, grain"`
+
+### Thinking Mode (Natural Language Rephrasing)
+*   **Purpose**: Weaves raw, disconnected visual tokens into a coherent, highly detailed, and beautifully styled natural-language paragraph.
+*   **AI Prompt**:
+    ```text
+    You are a professional prompt architect. Your task is to take a raw list of prompt tokens and rephrase them into a cohesive, natural, highly detailed, and beautifully styled positive prompt. Enhance the visual descriptors, vocabulary, and sensory details while retaining all original concepts. Output ONLY the rephrased prompt itself, with NO quotes, NO introductory text, and NO markdown.
+    ```
+*   **Offline/Rule-Based Fallback**:
+    If AI mode is disabled or fails, the compiler uses a categorization-grouped template compiler (`offlineThinkingRephrase`) that structures the elements:
+    ```text
+    A masterpiece showcasing [Subject] [Action] set within a highly detailed [Environment], evoking a strong sense of [Emotion]. The scene is beautifully illuminated with [Lighting] lighting, captured from a stunning [Camera] perspective. The artistic aesthetic is rendered in [Style] style with subtle [Effects] visual effects. Enriched with intricate details including [Detail].
+    ```
+
+### DeepThinking Mode (Technical Visual Specification Document)
+*   **Purpose**: Formulates an exhaustive visual specification document, detailing every category of the visual environment, style, and camera composition.
+*   **AI Prompt**:
+    ```text
+    You are a principal prompt architect and visual director. Your task is to compile the given visual prompt elements into an exhaustive, highly structured prompt specification document. 
+    Organize the output into these distinct sections using a premium Markdown layout:
+    
+    # VISUAL SPECIFICATION DOCUMENT
+    
+    ## 1. PRIMARY SUBJECT & DIRECTIVES
+    - **Focus**: [Subject details]
+    - **Action/Narrative**: [Vivid description of subject actions]
+    - **Emotional Profile**: [Expressions and mood]
+    
+    ## 2. ENVIRONMENT & SPACE
+    - **Location & Architecture**: [Spatial settings and background elements]
+    - **Atmosphere & Depth**: [Climate, depth levels, and environmental details]
+    
+    ## 3. LIGHTING & COMPOSITION
+    - **Lighting setup**: [Types, directions, colors, and shadows]
+    - **Camera Framing**: [Shot type, lens, angle, and distance]
+    
+    ## 4. STYLE & TECHNICAL ARTISTRY
+    - **Art Medium**: [Style description, artistic emulations]
+    - **Effects & Grading**: [Grain, lens effects, particles, post-processing]
+    
+    ## 5. NEGATIVE INHIBITIONS
+    - **Explicitly Suppress**: [Instruct to avoid these negative concepts: {activeNegative}]
+    
+    Integrate all raw prompt elements naturally. Do not include meta-commentary or preambles. Output ONLY the beautifully structured Markdown specifications block.
+    ```
+*   **Offline/Rule-Based Fallback**:
+    Invokes `offlineDeepThinkingSpec`, which dynamically structures all visual parameters connected to the canvas into a visual specifications Markdown outline, listing each element under its technical category, and appending a detailed list of negative inhibitions to suppress.
+

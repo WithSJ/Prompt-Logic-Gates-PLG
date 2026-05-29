@@ -128,3 +128,58 @@ When in **AI Mode**, the compiler bypasses offline rules and triggers direct pro
     3. Do NOT include the questions or literal "Clarification on Q..." strings. Just output the refined, integrated prompt text.
     4. Keep the output extremely clean. Respond with ONLY the optimized, merged positive prompt text. No markdown, no quotes, no extra commentary.
     ```
+
+---
+
+## 4. Multi-Depth Compilation Modes
+
+The semantic compiler supports three distinct compilation depth settings (Normal, Thinking, and DeepThinking), allowing the visual circuit output to be formatted in different levels of density and styling.
+
+### A. Normal Mode
+*   **Behavior**: Executes the topological compilation and outputs the final de-conflicted baseline list of visual tokens separated by commas.
+*   **Aesthetic**: Direct, clean, and optimized for immediate baseline parsing.
+
+### B. Thinking Mode (Polished Narrative)
+*   **AI Prompt**:
+    ```text
+    You are a professional prompt architect. Your task is to take a raw list of prompt tokens and rephrase them into a cohesive, natural, highly detailed, and beautifully styled positive prompt. Enhance the visual descriptors, vocabulary, and sensory details while retaining all original concepts. Output ONLY the rephrased prompt itself, with NO quotes, NO introductory text, and NO markdown.
+    ```
+*   **Offline/Rule-Based Fallback**:
+    Filters kept visual elements and groups them by their visual category. Synthesizes a structured natural paragraph:
+    ```text
+    A masterpiece showcasing [Subject] [Action] set within a highly detailed [Environment], evoking a strong sense of [Emotion]. The scene is beautifully illuminated with [Lighting] lighting, captured from a stunning [Camera] perspective. The artistic aesthetic is rendered in [Style] style with subtle [Effects] visual effects. Enriched with intricate details including [Detail].
+    ```
+
+### C. DeepThinking Mode (Exhaustive Technical Specification)
+*   **AI Prompt**:
+    ```text
+    You are a principal prompt architect and visual director. Your task is to compile the given visual prompt elements into an exhaustive, highly structured prompt specification document. 
+    Organize the output into these distinct sections using a premium Markdown layout:
+    
+    # VISUAL SPECIFICATION DOCUMENT
+    
+    ## 1. PRIMARY SUBJECT & DIRECTIVES
+    - **Focus**: [Subject details]
+    - **Action/Narrative**: [Vivid description of subject actions]
+    - **Emotional Profile**: [Expressions and mood]
+    
+    ## 2. ENVIRONMENT & SPACE
+    - **Location & Architecture**: [Spatial settings and background elements]
+    - **Atmosphere & Depth**: [Climate, depth levels, and environmental details]
+    
+    ## 3. LIGHTING & COMPOSITION
+    - **Lighting setup**: [Types, directions, colors, and shadows]
+    - **Camera Framing**: [Shot type, lens, angle, and distance]
+    
+    ## 4. STYLE & TECHNICAL ARTISTRY
+    - **Art Medium**: [Style description, artistic emulations]
+    - **Effects & Grading**: [Grain, lens effects, particles, post-processing]
+    
+    ## 5. NEGATIVE INHIBITIONS
+    - **Explicitly Suppress**: [Instruct to avoid these negative concepts: {activeNegative}]
+    
+    Integrate all raw prompt elements naturally. Do not include meta-commentary or preambles. Output ONLY the beautifully structured Markdown specifications block.
+    ```
+*   **Offline/Rule-Based Fallback**:
+    Outputs a premium visual specifications document in Markdown structure, complete with bulleted category lists for all connected visual nodes, and a dedicated negative exclusions section.
+

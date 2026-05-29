@@ -58,6 +58,19 @@ function PLGApp() {
   const [isCompiling, setIsCompiling] = useState(false);
   const [fileTitle, setFileTitle] = useState('prompt.txt');
   const [toast, setToast] = useState({ show: false, type: 'info', text: '' });
+  const [compilationMode, setCompilationMode] = useState(() => {
+    return Store.get('plg_compilation_mode') || 'normal';
+  });
+
+  // Sync compilation mode to LocalStorage
+  useEffect(() => {
+    Store.set('plg_compilation_mode', compilationMode);
+  }, [compilationMode]);
+
+  const handleCompilationModeChange = (mode) => {
+    setCompilationMode(mode);
+    showToast(`Compilation Depth set to ${mode === 'normal' ? 'Normal' : mode === 'thinking' ? 'Thinking' : 'DeepThinking'}`, 'info');
+  };
 
   // Toast handler
   const showToast = useCallback((text, type = 'info') => {
@@ -375,7 +388,7 @@ function PLGApp() {
   const handleCompile = async () => {
     setIsCompiling(true);
     try {
-      const result = await compileGraph(nodes, edges, settings);
+      const result = await compileGraph(nodes, edges, { ...settings, compilationMode });
       setCompileResult(result);
       
       // Sync compiled outputs back into File Node and resolve states for File Viewer nodes
@@ -396,42 +409,12 @@ function PLGApp() {
         }
 
         if (n.type === 'fileViewer') {
-          // Trace intermediate prompt state recursively back through 'file' handle paths
-          const traceBackState = (nodeId) => {
-            const edge = edges.find((e) => e.target === nodeId && e.targetHandle === 'file');
-            if (!edge) return { positive: '', negative: '' };
-            
-            const sourceNode = nds.find((sn) => sn.id === edge.source);
-            if (!sourceNode) return { positive: '', negative: '' };
-            
-            if (sourceNode.type === 'fileNode') {
-              return { positive: '', negative: '' };
-            }
-            
-            if (['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptToFile'].includes(sourceNode.type)) {
-              return result.gateStates[sourceNode.id] || { positive: '', negative: '' };
-            }
-            
-            if (sourceNode.type === 'fileViewer' || sourceNode.type === 'fileToPrompt') {
-              return traceBackState(sourceNode.id);
-            }
-            
-            return { positive: '', negative: '' };
-          };
-
-          let stateAtViewer = traceBackState(n.id);
-          if (!stateAtViewer.positive && !stateAtViewer.negative) {
-            stateAtViewer = {
-              positive: result.positive,
-              negative: result.negative
-            };
-          }
           return {
             ...n,
             data: {
               ...n.data,
-              compiledPositive: stateAtViewer.positive,
-              compiledNegative: stateAtViewer.negative
+              compiledPositive: result.positive,
+              compiledNegative: result.negative
             }
           };
         }
@@ -976,6 +959,8 @@ function PLGApp() {
           onClearCanvas={handleClearCanvas}
           onExportTxt={handleExportTxt}
           fileTitle={fileTitle}
+          compilationMode={compilationMode}
+          onChangeCompilationMode={handleCompilationModeChange}
         />
       </div>
 

@@ -1033,3 +1033,59 @@ input, textarea, select {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--line2);
 }
+
+/* Compilation Depth Segmented Selector styles */
+.thought-selector {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 18px;
+  gap: 4px;
+}
+.thought-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6.5px 0;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  color: var(--txt-dim);
+  transition: all 0.15s ease-in-out;
+  border: 1px solid transparent;
+}
+.thought-btn:hover {
+  color: var(--txt);
+  background: rgba(255, 255, 255, 0.03);
+}
+.thought-btn.active {
+  color: #fff;
+  background: var(--panel2);
+  border: 1px solid var(--line2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.thought-btn.active.normal {
+  border-color: var(--prompt);
+  color: var(--prompt);
+  background: color-mix(in srgb, var(--prompt) 7%, var(--panel2));
+}
+.thought-btn.active.thinking {
+  border-color: var(--or);
+  color: var(--or);
+  background: color-mix(in srgb, var(--or) 7%, var(--panel2));
+}
+.thought-btn.active.deep {
+  border-color: var(--file);
+  color: var(--file);
+  background: color-mix(in srgb, var(--file) 7%, var(--panel2));
+}
+.thought-btn svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+

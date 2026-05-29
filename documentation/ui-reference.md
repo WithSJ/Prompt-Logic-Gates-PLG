@@ -143,6 +143,14 @@ The compilation output panel ([Inspector.jsx](file:///c:/Users/jadam/Desktop/PLG
 ### Header
 Shows the current file title (from the File Node's filename field) + a "Read-Only" badge.
 
+### Compilation Depth Selector
+Rendered directly below the header as a premium glassmorphic segment block, this control allows configuring the thought depth of the final compiled positive prompt:
+- **Normal** (with `Zap` icon, Cyan active accent): Standard raw category-prioritized comma-separated listing.
+- **Thinking** (with `Brain` icon, Violet active accent): Beautifully polished, rich natural-language rephrasings.
+- **Deep** (with `Cpu` icon, Amber active accent): Exhaustive technical visual specification document structured in Markdown.
+
+The selected depth mode is saved automatically to LocalStorage and triggers real-time toast notification feedback upon adjustment.
+
 ### Before Compilation
 An empty state with a sparkle icon and the message: "Wire up a graph on the canvas and hit **Compile** to assemble your optimized prompt."
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Download, Trash, ChevronDown, ChevronUp, FileCode, CheckCircle, Sparkles } from 'lucide-react';
+import { Copy, Download, Trash, ChevronDown, ChevronUp, FileCode, CheckCircle, Sparkles, Zap, Brain, Cpu } from 'lucide-react';
 
 const CAT_COLORS = { 
   subject: 'var(--not)', 
@@ -17,7 +17,9 @@ export default function Inspector({
   compileResult, 
   onClearCanvas, 
   onExportTxt, 
-  fileTitle 
+  fileTitle,
+  compilationMode = 'normal',
+  onChangeCompilationMode
 }) {
   const [copiedPos, setCopiedPos] = useState(false);
   const [copiedNeg, setCopiedNeg] = useState(false);
@@ -56,6 +58,40 @@ export default function Inspector({
       </div>
 
       <div className="insp-scroll">
+        {/* Compilation Depth Selector */}
+        <div className="osec" style={{ marginBottom: 16 }}>
+          <div className="osec-h">
+            <span className="sq" style={{ background: compilationMode === 'normal' ? 'var(--prompt)' : compilationMode === 'thinking' ? 'var(--or)' : 'var(--file)' }}></span>
+            Compilation Depth
+          </div>
+          <div className="thought-selector">
+            <button 
+              className={`thought-btn ${compilationMode === 'normal' ? 'active normal' : ''}`}
+              onClick={() => onChangeCompilationMode && onChangeCompilationMode('normal')}
+              title="Compile the visual pipeline prompt exactly as it is built (Normal mode)"
+            >
+              <Zap />
+              Normal
+            </button>
+            <button 
+              className={`thought-btn ${compilationMode === 'thinking' ? 'active thinking' : ''}`}
+              onClick={() => onChangeCompilationMode && onChangeCompilationMode('thinking')}
+              title="Rephrase, polish, and enrich the prompt beautifully using semantic details (Thinking mode)"
+            >
+              <Brain />
+              Thinking
+            </button>
+            <button 
+              className={`thought-btn ${compilationMode === 'deep-thinking' ? 'active deep' : ''}`}
+              onClick={() => onChangeCompilationMode && onChangeCompilationMode('deep-thinking')}
+              title="Compile the prompt into a deeply detailed technical Markdown specification (DeepThinking mode)"
+            >
+              <Cpu />
+              Deep
+            </button>
+          </div>
+        </div>
+
         {!compileResult ? (
           <div className="empty-state">
             <Sparkles size={38} style={{ color: 'var(--prompt)' }} />

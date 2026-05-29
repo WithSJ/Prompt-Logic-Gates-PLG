@@ -4,6 +4,15 @@ This is an append-only chronological ledger tracking major engineering steps, re
 
 ---
 
+## [2026-05-29] design | Multi-Depth Prompt Compilation Modes Implemented
+- **Action**: Added 3 prompt compilation depth options (Normal, Thinking, DeepThinking) to the visual IDE's Inspector panel and Semantic Compiler.
+- **Details**:
+  - **Premium UI & Segmented Control**: Implemented a glassmorphic segment selector inside [Inspector.jsx](../src/components/Inspector.jsx) utilizing Lucide icons (`Zap`, `Brain`, `Cpu`) with responsive active HSL colors and glowing focus rings in [index.css](../src/index.css).
+  - **State & LocalStorage Sync**: Synchronized compiler modes in [App.jsx](../src/App.jsx) to persist in local storage, automatically restoring preferences on reload and providing premium toast feedback.
+  - **Thinking Mode Pipeline**: Expanded the compiler in [semanticCompiler.js](../src/compiler/semanticCompiler.js) to rephrase prompts beautifully via LLM, and implemented a high-vocabulary offline natural paragraph synthesizer that groups items by semantic category (Subject, Environment, camera framing, etc.) as a fallback.
+  - **DeepThinking Mode Pipeline**: Formulated a compiler engine that outputs an exhaustive visual spec document in Markdown layout (covering Subject Focus, Spatial Context, Lighting/Composition, and Suppression Rules) via LLM, alongside a structured offline specs document fallback.
+
+
 ## [2026-05-29] refine | Git Repository Initialized & Configured
 - **Action**: Created core Git configuration files and prepared the project for GitHub publishing.
 - **Details**:
