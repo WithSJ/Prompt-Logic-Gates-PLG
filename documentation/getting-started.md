@@ -29,7 +29,7 @@ This guide walks you through installing, running, and using the PLG IDE for the 
 
 ```bash
 # If you cloned via Git:
-git clone <your-repo-url> PLG
+git clone https://github.com/WithSJ/Prompt-Logic-Gates-PLG-.git PLG
 cd PLG
 
 # Or simply navigate to the project folder:
