@@ -4,6 +4,15 @@ This is an append-only chronological ledger tracking major engineering steps, re
 
 ---
 
+## [2026-05-30] refine | Add AI Rephrase Button to Prompt Box Custom Node
+- **Action**: Conceived and integrated an **AI Rephrase Fragment** button directly into the `PromptBoxNode` custom component to automatically optimize raw user inputs, correct typos, grammar issues, and enforce a commanding visual tone.
+- **Details**:
+  - **Rephrase Handler Bonded**: Created an asynchronous callback `onRephrasePrompt` in [App.jsx](../src/App.jsx) bound inside the `bindNodeCallbacks` wrapper.
+  - **AI Rephrasing Prompt Formulated**: Formulated a targeted system prompt inside `onRephrasePrompt` directing the LLM to scan prompt fragments, fix structural typos or spelling errors, and output a concise, commanding rephrased fragment without meta-text.
+  - **Offline Rephraser Fallback**: Implemented an offline fallback that cleans double spaces, handles first-letter capitalization, and outputs the sanitized baseline text if AI calls fail.
+  - **UI/UX Node Component Upgrades**: Modified `PromptBoxNode` in [CustomNodes.jsx](../src/components/CustomNodes.jsx) to display a glassmorphic button equipped with a Brain icon and responsive spinner animation. Adjusted target handle vertically to `top: "50%"` to center dynamically.
+  - **Documentation & Wiki Updated**: Updated the nodes manual ([nodes-guide.md](../documentation/nodes-guide.md)) and the wiki guide ([nodes.md](nodes.md)) to reflect Prompt Box rephrasing controls.
+
 ## [2026-05-30] refine | Redesign Compiled Prompts for Strict Commanding and Directive Output
 - **Action**: Completely overhauled the semantic prompt compilers (both AI and offline modes) to ensure all generated outputs are strictly directive visual briefs or commanding sentences, eliminating passive phrasings, parenthesized technical metadata, and document references.
 - **Details**:

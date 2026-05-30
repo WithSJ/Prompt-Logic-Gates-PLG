@@ -39,6 +39,8 @@ These nodes initialize data streams and serve as the circuit's head-water inputs
 *   **Role**: Provides a raw text fragment input.
 *   **Fields**:
     *   `text`: Textarea input where the user types a prompt segment (e.g. `cinematic lighting, film grain`).
+*   **Buttons**:
+    *   `AI Rephrase Fragment`: A glassmorphic button equipped with a Brain icon. When clicked, it takes the current text fragment, corrects all human typos, spelling errors, or grammar issues using AI (or offline capitalize/clean fallback), and outputs a highly optimized, commanding prompt fragment.
 *   **Handles**:
     *   **Source** (Right): `out` - Outputs the raw prompt string.
 

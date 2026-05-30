@@ -167,6 +167,45 @@ function PLGApp() {
       onChangeText: (id, txt) => {
         setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, text: txt } } : n));
       },
+      onRephrasePrompt: async (id, currentText) => {
+        if (!currentText || !currentText.trim()) {
+          showToast('Cannot rephrase empty prompt text', 'error');
+          return;
+        }
+        
+        setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, isRephrasing: true } } : n));
+        
+        try {
+          let rephrasedText = '';
+          if (settings.mode === 'ai') {
+            const systemPrompt = `You are a professional prompt optimization engine inside a prompt-building IDE.
+Your task is to take a raw prompt fragment or baseline containing potential human grammar mistakes, spelling issues, or structured typos, and rephrase it into a grammatically correct, highly optimized visual prompt fragment.
+Follow these strict instructions:
+1. Speak in a highly commanding, active, and directive visual tone. Use active visual verbs.
+2. Fix all typos, spelling issues, casing errors, and punctuation errors.
+3. Make it clean and concise. Do NOT add conversational headers, conversational preambles, introductory commentary, or quotes.
+4. Output ONLY the optimized, rephrased prompt fragment text itself, nothing else.`;
+
+            const userPrompt = `Raw Prompt Fragment: "${currentText.trim()}"`;
+            const response = await callAI(systemPrompt, userPrompt, settings);
+            rephrasedText = (response || '').trim();
+          } else {
+            // Offline fallback rephrase logic
+            rephrasedText = currentText.trim();
+            if (rephrasedText.length > 0) {
+              rephrasedText = rephrasedText.charAt(0).toUpperCase() + rephrasedText.slice(1);
+            }
+            rephrasedText = rephrasedText.replace(/\s+/g, ' ');
+          }
+          
+          setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, text: rephrasedText, isRephrasing: false } } : n));
+          showToast('Prompt rephrased successfully', 'ok');
+        } catch (err) {
+          console.error("Rephrasing failed: ", err);
+          showToast('AI Rephrasing failed. Using offline fallback.', 'error');
+          setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, isRephrasing: false } } : n));
+        }
+      },
       onChangeAnswer: (id, idx, val) => {
         setNodes((nds) => nds.map((n) => {
           if (n.id === id) {

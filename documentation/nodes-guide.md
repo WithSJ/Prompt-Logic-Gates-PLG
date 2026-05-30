@@ -66,6 +66,9 @@ Every circuit needs at least one File Node. It doesn't contain prompt text itsel
 ### What It Does
 Holds a text string that you write. This is your creative input. Connect it to gate inputs (A, B, prompt, or p0/p1/etc.) to feed prompt fragments into the compilation pipeline.
 
+### AI Rephrase Fragment
+The Prompt Box is equipped with a glassmorphic **AI Rephrase Fragment** button (complete with a Brain icon). If you make grammar mistakes, typos, or write unstructured fragments, you can click the button to invoke the AI optimizer (or local offline rephrasing fallback). It will automatically refine your text into a grammatically correct, highly optimized visual prompt fragment in a strict commanding tone, while preserving your core variables and vocabulary.
+
 ### Fields
 | Field | Type | Default | Description |
 | :--- | :--- | :--- | :--- |

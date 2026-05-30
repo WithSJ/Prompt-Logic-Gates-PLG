@@ -66,6 +66,14 @@ export const FileNode = memo(({ id, data, selected, context }) => {
 export const PromptBoxNode = memo(({ id, data, selected }) => {
   const onDelete = data.onDeleteNode || (() => {});
   const text = data.text || '';
+  const isRephrasing = data.isRephrasing || false;
+
+  const handleRephrase = async (e) => {
+    e.stopPropagation();
+    if (data.onRephrasePrompt) {
+      await data.onRephrasePrompt(id, text);
+    }
+  };
 
   return (
     <div className={`rf-node ${selected ? 'selected' : ''}`} style={{ '--accent': 'var(--prompt)' }}>
@@ -75,20 +83,53 @@ export const PromptBoxNode = memo(({ id, data, selected }) => {
         icon={Type} 
         onDelete={onDelete}
       />
-      <div className="rf-node-body">
+      <div className="rf-node-body" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <textarea
           value={text}
           onChange={(e) => data.onChangeText(id, e.target.value)}
           placeholder="Type a prompt fragment... e.g., abandoned hospital"
           className="nodrag"
         />
+        <button
+          className="prompt-rephrase-btn nodrag"
+          onClick={handleRephrase}
+          disabled={isRephrasing || !text.trim()}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            width: '100%',
+            height: '26px',
+            borderRadius: '6px',
+            fontSize: '11px',
+            fontWeight: '600',
+            cursor: text.trim() ? 'pointer' : 'not-allowed',
+            transition: 'all 0.15s ease-in-out',
+            background: isRephrasing ? 'var(--node-head)' : (text.trim() ? 'rgba(34, 211, 238, 0.12)' : 'var(--bg)'),
+            border: `1px solid ${isRephrasing ? 'var(--line)' : (text.trim() ? 'var(--prompt)' : 'var(--line)')}`,
+            color: isRephrasing ? 'var(--txt-faint)' : (text.trim() ? 'var(--prompt)' : 'var(--txt-faint)'),
+          }}
+        >
+          {isRephrasing ? (
+            <>
+              <span className="spin" style={{ width: '10px', height: '10px', borderTopColor: 'var(--prompt)', borderLeftColor: 'transparent', borderStyle: 'solid', borderWidth: '1.5px', borderRadius: '50%', display: 'inline-block' }}></span>
+              <span>Rephrasing...</span>
+            </>
+          ) : (
+            <>
+              <Brain size={12} />
+              <span>AI Rephrase Fragment</span>
+            </>
+          )}
+        </button>
       </div>
       <Handle
         type="source"
         position={Position.Right}
         id="out"
         className="prompt"
-        style={{ top: '68px' }}
+        style={{ top: '50%' }}
       />
     </div>
   );
