@@ -264,10 +264,11 @@ This means compilation **never fully fails** — it degrades gracefully to offli
 
 ---
 
-## 6. Offline Question Bank
+## 6. Domain-Specific Offline Question Banks
 
-When Ask AI Questions runs in rule-based mode, it draws from this hardcoded bank of 10 template questions:
+When the `AskAIQuestions` logic runs in rule-based mode, it doesn't serve a single hardcoded list of questions. Instead, it utilizes the detected domain from the **Priority Manager** to select one of five specialized 10-question banks:
 
+### A. Image Generation Domain (`image`)
 1. What is the desired primary subject focus or perspective of the generation?
 2. Are there specific color palettes, mood variables, or lighting constraints to prioritize?
 3. What stylistic medium or resolution characteristics should be enforced?
@@ -278,6 +279,54 @@ When Ask AI Questions runs in rule-based mode, it draws from this hardcoded bank
 8. What kind of visual effects, grain, vignette, or post-processing is preferred?
 9. Is there a specific level of detail, roughness, or cleanliness expected?
 10. Are there negative elements or objects that must be completely absent?
+
+### B. Code Generation & Programming Domain (`code`)
+1. What is the primary programming language, framework, or runtime environment (e.g., Python 3.10, React 18 with TypeScript)?
+2. What is the core business logic, algorithm, or function that this code must perform?
+3. What are the expected input parameters and their exact data structures or schemas?
+4. What is the expected return type, output format, or response structure?
+5. Are there specific performance constraints, time/space complexities (e.g., O(N log N)), or execution memory limits?
+6. Should the code follow a specific design pattern, standard, or paradigm (e.g., Functional, OOP, SOLID)?
+7. What third-party libraries, modules, or dependencies are allowed or preferred for this implementation?
+8. How should exceptions, boundary limits, and unexpected input edge cases be handled?
+9. Are there specific unit testing requirements (e.g., Jest, PyTest) or mocking expectations?
+10. What level of documentation, JSDoc schemas, or inline comments are expected in the final code?
+
+### C. Bug Finding & Debugging Domain (`debug`)
+1. What is the exact error message, warning label, or uncaught exception stack trace?
+2. Can you provide the specific code snippet, function, or file name where the error occurs?
+3. What was the expected correct behavior or output that should have occurred?
+4. What is the actual incorrect behavior, output, or crash pattern happening instead?
+5. What are the operating system, language runtime, or package dependency versions in this environment?
+6. What recent changes, refactorings, or updates were made to the codebase before the bug appeared?
+7. What troubleshooting steps, logging attempts, or fixes have you already tried?
+8. Can you supply console logs, network response payloads, or database query dumps from the time of the crash?
+9. What system state, database records, or input data trigger this specific bug?
+10. Are there strict resolution constraints, such as keeping the fix backward-compatible or avoiding core refactorings?
+
+### D. Software Architecture & System Design Domain (`architecture`)
+1. What are the primary business goals, target scale (e.g., 10M DAU), and throughput/latency requirements?
+2. Which architectural style or system pattern is preferred (e.g., Microservices, Monolithic, Event-Driven)?
+3. What database engine, storage format, caching layer, or indexing strategy should be adopted?
+4. What is the preferred tech stack, hosting provider (AWS, GCP), and container orchestrator (Kubernetes)?
+5. What are the most critical non-functional requirements (e.g., scalability, high availability, maintainability)?
+6. Which communication protocols and message brokers should connect the services (e.g., gRPC, REST, Kafka)?
+7. What are the user authentication, data privacy, and security compliance constraints (e.g., OAuth2, GDPR)?
+8. What kind of continuous integration, deployment pipeline, and monitoring systems are required (e.g., Prometheus, Grafana)?
+9. Are there strict hosting budgets, infrastructure costs, or physical resource limits to respect?
+10. What are the integration touchpoints with legacy systems or external third-party API services?
+
+### E. GUI & UI/UX Design Domain (`gui`)
+1. What is the target platform (Web, Mobile, Desktop) and target screen size (Responsive, Mobile-first)?
+2. What core visual components (e.g., sidebar navigation, dashboard widgets, modal drawers) must be present?
+3. What is the preferred color palette, theme orientation (dark mode, light mode), or HSL brand tokens?
+4. What font families, typography weights, and text scaling rules should be applied?
+5. What micro-animations, hover transition effects, or visual loading feedback states are required?
+6. Which CSS framework, component library, or custom styling rules should be used (e.g., Tailwind CSS, Vanilla CSS)?
+7. What are the specific accessibility guidelines (a11y), screen-reader properties, or keyboard navigations to implement?
+8. What margin, padding, border radius, and flexbox/grid layout spaces should govern the components?
+9. What graphical assets, SVG vectors, icon styles (e.g., Lucide), or logotypes must be integrated?
+10. Are there specific responsive breakpoints or container width limitations to enforce?
 
 ---
 
