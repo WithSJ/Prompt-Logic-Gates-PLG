@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Download, Trash, ChevronDown, ChevronUp, FileCode, CheckCircle, Sparkles, Zap, Brain, Cpu } from 'lucide-react';
+import { Copy, Download, Trash, ChevronDown, ChevronUp, FileCode, CheckCircle, Sparkles, Zap, Brain, Cpu, Layers } from 'lucide-react';
 
 const CAT_COLORS = { 
   subject: 'var(--not)', 
@@ -19,7 +19,9 @@ export default function Inspector({
   onExportTxt, 
   fileTitle,
   compilationMode = 'normal',
-  onChangeCompilationMode
+  onChangeCompilationMode,
+  priorityDomain = 'auto',
+  onChangePriorityDomain
 }) {
   const [copiedPos, setCopiedPos] = useState(false);
   const [copiedNeg, setCopiedNeg] = useState(false);
@@ -58,6 +60,29 @@ export default function Inspector({
       </div>
 
       <div className="insp-scroll">
+        {/* Compiler Priority Schema Selector */}
+        <div className="osec" style={{ marginBottom: 16 }}>
+          <div className="osec-h">
+            <span className="sq" style={{ background: priorityDomain === 'auto' ? 'var(--ok)' : priorityDomain === 'image' ? 'var(--prompt)' : priorityDomain === 'code' ? 'var(--and)' : priorityDomain === 'debug' ? 'var(--not)' : priorityDomain === 'architecture' ? 'var(--file)' : 'var(--memory)' }}></span>
+            Compiler Priority Schema
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <select 
+              value={priorityDomain}
+              onChange={(e) => onChangePriorityDomain && onChangePriorityDomain(e.target.value)}
+              className="priority-select"
+              title="Select dynamic sorting priority schema for compilation flow"
+            >
+              <option value="auto">💡 Auto Detect (Lexical/AI Classifier)</option>
+              <option value="image">🎨 Image Generation (Art & Visuals)</option>
+              <option value="code">💻 Code Generation & Programming</option>
+              <option value="debug">🐞 Bug Finding & Debugging</option>
+              <option value="architecture">🏛 Software Architecture & Design</option>
+              <option value="gui">🎨 GUI & UI/UX Design Layout</option>
+            </select>
+          </div>
+        </div>
+
         {/* Compilation Depth Selector */}
         <div className="osec" style={{ marginBottom: 16 }}>
           <div className="osec-h">

@@ -13,6 +13,64 @@ export const CATEGORIES = {
   detail:     { p: 45,  label: 'Detail', kw: [] }
 };
 
+export const DOMAINS = {
+  image: {
+    subject:    { p: 100, label: 'Subject', kw: ['man','woman','person','people','character','figure','girl','boy','child','ghost','nurse','creature','monster','demon','spirit','animal','dog','cat','soldier','priest','father','daughter','robot','zombie','skeleton','witch','beast','entity','protagonist','villain','face','portrait'] },
+    environment:{ p: 90,  label: 'Environment', kw: ['hospital','forest','room','factory','city','street','house','building','dungeon','cave','school','office','church','temple','abandoned','ruins','landscape','mountain','desert','ocean','sea','village','town','corridor','hallway','basement','attic','warehouse','laboratory','swamp','jungle','interior','exterior','background','setting','environment'] },
+    action:     { p: 80,  label: 'Action', kw: ['running','walking','standing','sitting','screaming','crying','attacking','holding','fighting','jumping','falling','crawling','hiding','chasing','floating','flying','reaching','looking','staring','praying','dancing','reading','sleeping','dying','bleeding'] },
+    emotion:    { p: 70,  label: 'Emotion', kw: ['scary','terrifying','eerie','creepy','dread','horror','horrific','ominous','unsettling','frightening','tense','melancholic','sad','happy','joyful','peaceful','calm','angry','lonely','hopeless','disturbing','nightmarish','sinister','mood','atmosphere','atmospheric'] },
+    lighting:   { p: 60,  label: 'Lighting', kw: ['dark','darkness','bright','dim','neon','candlelight','moonlight','sunlight','backlit','fog','foggy','mist','shadow','shadows','glow','glowing','flickering','spotlight','rim light','volumetric','silhouette','overcast','dusk','dawn','night','day','lighting'] },
+    style:      { p: 50,  label: 'Style', kw: ['ps1','ps2','realistic','photorealistic','cartoon','anime','toon','painterly','cinematic','3d','3d render','render','pixel','pixel art','low poly','retro','vintage','noir','watercolor','oil painting','sketch','comic','manga','hyperrealistic','stylized','grunge','vfx','analog','found footage','style','aesthetic'] },
+    detail:     { p: 45,  label: 'Detail', kw: ['highly detailed','8k','photorealistic','intricate','cinematic'] },
+    camera:     { p: 40,  label: 'Camera', kw: ['close-up','closeup','wide shot','wide angle','first-person','first person','third-person','top-down','bird','fisheye','depth of field','bokeh','macro','panorama','dutch angle','low angle','high angle','tracking shot','pov','shot','lens','35mm','50mm','85mm'] },
+    effects:    { p: 30,  label: 'Effects', kw: ['grain','film grain','blur','motion blur','particles','vignette','chromatic aberration','glitch','lens flare','dust','smoke','sparks','rain','snow','scanlines','noise','distortion','vfx','effect','effects','bloom'] }
+  },
+  code: {
+    lang_env:      { p: 100, label: 'Language & Env', kw: ['python', 'rust', 'javascript', 'typescript', 'react', 'node', 'v18', 'compile', 'runtime'] },
+    functionality: { p: 95,  label: 'Core Functionality', kw: ['function', 'method', 'class', 'api fetch', 'endpoint', 'algorithm', 'sorting', 'route'] },
+    io_structure:  { p: 85,  label: 'I/O & Data Structure', kw: ['json payload', 'schema', 'parameters', 'return type', 'string', 'database', 'array'] },
+    constraints:   { p: 75,  label: 'Performance Rules', kw: ['fast', 'memory limit', 'time complexity', 'o(1)', 'no dependencies', 'lightweight'] },
+    standards:     { p: 65,  label: 'Coding Standards', kw: ['clean code', 'modular', 'solid', 'dry', 'airbnb style', 'oop', 'functional programming'] },
+    edge_cases:    { p: 55,  label: 'Edge Cases', kw: ['null pointer', 'undefined', 'exception', 'fallback', 'timeout', 'empty array'] },
+    libraries:     { p: 45,  label: 'Third-Party Libs', kw: ['lodash', 'axios', 'tailwind', 'redis', 'express', 'mongoose', 'pandas', 'numpy'] },
+    testing:       { p: 35,  label: 'Testing', kw: ['unit test', 'jest', 'pytest', 'test suite', 'mock', 'assertion', 'coverage'] },
+    documentation: { p: 25,  label: 'Docs & Comments', kw: ['jsdoc', 'inline comments', 'docstrings', 'readme', 'markdown', 'swagger'] }
+  },
+  debug: {
+    error_stack:   { p: 100, label: 'Error & Stacktrace', kw: ['typeerror', 'nullpointerexception', 'syntaxerror', 'crash', 'uncaught exception'] },
+    failing_code:  { p: 95,  label: 'Failing Code', kw: ['block of code', 'function snippet', 'index.js', 'line 42', 'failing method'] },
+    expected:      { p: 85,  label: 'Expected Behavior', kw: ['should return', 'expected behavior', 'goal', 'target output', 'expected to'] },
+    actual:        { p: 80,  label: 'Actual Behavior', kw: ['actually returns', 'undefined behavior', 'incorrect output', 'freezing'] },
+    env_state:     { p: 70,  label: 'Environment State', kw: ['os version', 'node version', 'chrome devtools', 'local storage', 'docker container'] },
+    recent_changes:{ p: 60,  label: 'Recent Changes', kw: ['git diff', 'commit history', 'changed file', 'updated package', 'refactored'] },
+    attempts:      { p: 50,  label: 'Attempted Fixes', kw: ['already tried', 'tried replacing', 'attempted solution', "doesn't work"] },
+    logs:          { p: 40,  label: 'Diagnostics & Logs', kw: ['console.log', 'network payload', 'stack trace', 'db query', 'print', 'debug log'] },
+    constraints:   { p: 30,  label: 'Resolution Constraints', kw: ['hotfix only', 'no refactoring', 'legacy-compatible', 'avoid breaking changes'] }
+  },
+  architecture: {
+    goals_scale:   { p: 100, label: 'Goals & Scale', kw: ['10m dau', 'latency', 'throughput', 'scale', 'goals', 'highly available', 'business'] },
+    patterns:      { p: 90,  label: 'Arch Pattern', kw: ['microservices', 'monolith', 'serverless', 'mvc', 'event-driven', 'pub-sub'] },
+    data_storage:  { p: 80,  label: 'Data & Storage', kw: ['sql', 'postgresql', 'nosql', 'mongodb', 'redis cache', 'indexing', 'replica'] },
+    platforms:     { p: 70,  label: 'Tech Stack', kw: ['aws', 'kubernetes', 'docker', 'node.js', 'go', 'python', 'cloud infrastructure'] },
+    quality_attr:  { p: 60,  label: 'Quality Attributes', kw: ['scalability', 'reliability', 'portability', 'maintainability', 'extensibility'] },
+    protocols:     { p: 50,  label: 'APIs & Protocols', kw: ['rest api', 'graphql', 'grpc', 'websockets', 'kafka message broker', 'http/2'] },
+    security:      { p: 40,  label: 'Security Rules', kw: ['oauth2', 'jwt', 'gdpr compliance', 'encryption', 'ssl', 'firewall', 'iam'] },
+    devops:        { p: 30,  label: 'CI/CD & DevOps', kw: ['pipeline', 'deployment', 'github actions', 'prometheus', 'grafana', 'monitoring'] },
+    cost:          { p: 20,  label: 'Budget & Cost', kw: ['server cost', 'budget constraints', 'minimal resources', 'pricing', 'cloud expense'] }
+  },
+  gui: {
+    layout:        { p: 100, label: 'Layout & Grid', kw: ['responsive', 'desktop', 'mobile', 'grid system', 'flexbox', 'sidebar', 'container'] },
+    components:    { p: 90,  label: 'UI Components', kw: ['navbar', 'dashboard card', 'modal dialog', 'form', 'button', 'tooltip', 'table'] },
+    theme:         { p: 80,  label: 'Theme & Palette', kw: ['dark mode', 'color palette', 'primary cyan', 'gradient', 'glassmorphism', 'hsl'] },
+    typography:    { p: 70,  label: 'Typography', kw: ['font family', 'inter', 'typography scale', 'font weight', 'line height', 'header'] },
+    interactions:  { p: 60,  label: 'Transitions & Hover', kw: ['hover animation', 'active state', 'micro-animation', 'spinner', 'fade in'] },
+    framework:     { p: 50,  label: 'Frameworks', kw: ['tailwind css', 'pure vanilla css', 'react flow', 'material ui', 'bootstrap'] },
+    a11y:          { p: 40,  label: 'Accessibility', kw: ['aria landmarks', 'alt text', 'screen reader', 'color contrast', 'keyboard-safe'] },
+    spacing:       { p: 30,  label: 'Spacing & Gaps', kw: ['padding', 'margin', 'border radius', 'gap-4', 'auto alignment', 'layout flow'] },
+    assets:        { p: 20,  label: 'Icons & Media', kw: ['svg icons', 'lucide', 'avatar image', 'placeholder image', 'logo vector'] }
+  }
+};
+
 export const CONFLICTS = [
   ['realistic','cartoon'], ['photorealistic','cartoon'], ['realistic','anime'], ['photorealistic','anime'],
   ['realistic','toon'], ['hyperrealistic','pixel'], ['dark','bright'], ['day','night'], ['dawn','dusk'],
@@ -29,23 +87,27 @@ function hasTerm(text, term) {
   return (text || '').toLowerCase().includes(term.toLowerCase());
 }
 
-export function categorize(text) {
+export function categorize(text, categories = CATEGORIES) {
   const t = (text || '').toLowerCase();
-  let best = { cat: 'detail', hits: 0, p: CATEGORIES.detail.p };
-  for (const [cat, info] of Object.entries(CATEGORIES)) {
-    if (cat === 'detail') continue;
+  const catKeys = Object.keys(categories);
+  const fallbackCat = catKeys.includes('detail') ? 'detail' : (catKeys.includes('documentation') ? 'documentation' : catKeys[catKeys.length - 1] || 'detail');
+  const fallbackP = categories[fallbackCat]?.p || 45;
+  
+  let best = { cat: fallbackCat, hits: 0, p: fallbackP };
+  for (const [cat, info] of Object.entries(categories)) {
+    if (cat === fallbackCat) continue;
     let hits = 0;
     for (const k of info.kw) {
-      if (t.includes(k)) hits++;
+      if (t.includes(k.toLowerCase())) hits++;
     }
     if (hits > best.hits || (hits === best.hits && hits > 0 && info.p > best.p)) {
       best = { cat, hits, p: info.p };
     }
   }
-  return { category: best.cat, priority: CATEGORIES[best.cat].p };
+  return { category: best.cat, priority: categories[best.cat]?.p || fallbackP };
 }
 
-export function contextScore(text, contextText) {
+export function contextScore(text, contextText, categories = CATEGORIES) {
   const ct = tokens(contextText);
   const tt = tokens(text);
   const cset = new Set(ct);
@@ -54,12 +116,12 @@ export function contextScore(text, contextText) {
     if (cset.has(w)) overlap++;
   });
 
-  const tc = categorize(text).category;
+  const tc = categorize(text, categories).category;
   let affinity = 0;
-  for (const [cat, info] of Object.entries(CATEGORIES)) {
-    if (cat === tc && cat !== 'detail') {
+  for (const [cat, info] of Object.entries(categories)) {
+    if (cat === tc) {
       for (const k of info.kw) {
-        if (contextText.toLowerCase().includes(k)) {
+        if (contextText.toLowerCase().includes(k.toLowerCase())) {
           affinity += 1;
           break;
         }
@@ -74,7 +136,7 @@ export function contextScore(text, contextText) {
     }
   }
 
-  return overlap * 2 + affinity + categorize(text).priority / 100 - penalty;
+  return overlap * 2 + affinity + (categorize(text, categories).priority / 100) - penalty;
 }
 
 // Builds the topological execution order based on file and prompt-converter dependencies
@@ -409,25 +471,6 @@ const ALT_MOCK_QUESTIONS = [
   "Should the visual style emulate a specific director, artist, or historical era?"
 ];
 
-function offlineMockQuestions(excludedQs, count) {
-  const bank = [
-    "What is the desired primary subject focus or perspective of the generation?",
-    "Are there specific color palettes, mood variables, or lighting constraints to prioritize?",
-    "What stylistic medium or resolution characteristics should be enforced?",
-    "What time of day or atmospheric weather effects should be present in the scene?",
-    "Are there any secondary background elements, props, or characters to place?",
-    "Should the visual style emulate a specific director, artist, or historical era?",
-    "What specific camera framing, lens focal length, or viewing angle should be used?",
-    "What kind of visual effects, grain, vignette, or post-processing is preferred?",
-    "Is there a specific level of detail, roughness, or cleanliness expected?",
-    "Are there negative elements or objects that must be completely absent?"
-  ];
-  
-  const excludedSet = new Set((excludedQs || []).map(s => s.toLowerCase().trim()));
-  const filtered = bank.filter(q => !excludedSet.has(q.toLowerCase().trim()));
-  return filtered.slice(0, count);
-}
-
 // AI Clarification Questions generator
 async function aiAskQuestions(baselinePos, excludedQs, count, settings, memoryContent) {
   let system = `You are an expert AI prompt engineer. Your job is to analyze the positive prompt compiled so far, identify any gaps, ambiguities, or unclear stylistic directions, and generate a list of exactly ${count} crucial clarifying questions that the user should answer to make the prompt perfect.
@@ -493,11 +536,155 @@ Respond with ONLY the optimized, fully-designed Compiled Prompt text, with no ma
   return (raw || '').trim();
 }
 
+export const OFFLINE_QUESTIONS = {
+  image: [
+    "What is the desired primary subject focus or perspective of the generation?",
+    "Are there specific color palettes, mood variables, or lighting constraints to prioritize?",
+    "What stylistic medium or resolution characteristics should be enforced?",
+    "What time of day or atmospheric weather effects should be present in the scene?",
+    "Are there any secondary background elements, props, or characters to place?",
+    "Should the visual style emulate a specific director, artist, or historical era?",
+    "What specific camera framing, lens focal length, or viewing angle should be used?",
+    "What kind of visual effects, grain, vignette, or post-processing is preferred?",
+    "Is there a specific level of detail, roughness, or cleanliness expected?",
+    "Are there negative elements or objects that must be completely absent?"
+  ],
+  code: [
+    "What is the primary programming language, framework, or runtime environment (e.g., Python 3.10, React 18 with TypeScript)?",
+    "What is the core business logic, algorithm, or function that this code must perform?",
+    "What are the expected input parameters and their exact data structures or schemas?",
+    "What is the expected return type, output format, or response structure?",
+    "Are there specific performance constraints, time/space complexities (e.g., O(N log N)), or execution memory limits?",
+    "Should the code follow a specific design pattern, standard, or paradigm (e.g., Functional, OOP, SOLID)?",
+    "What third-party libraries, modules, or dependencies are allowed or preferred for this implementation?",
+    "How should exceptions, boundary limits, and unexpected input edge cases be handled?",
+    "Are there specific unit testing requirements (e.g., Jest, PyTest) or mocking expectations?",
+    "What level of documentation, JSDoc schemas, or inline comments are expected in the final code?"
+  ],
+  debug: [
+    "What is the exact error message, warning label, or uncaught exception stack trace?",
+    "Can you provide the specific code snippet, function, or file name where the error occurs?",
+    "What was the expected correct behavior or output that should have occurred?",
+    "What is the actual incorrect behavior, output, or crash pattern happening instead?",
+    "What are the operating system, language runtime, or package dependency versions in this environment?",
+    "What recent changes, refactorings, or updates were made to the codebase before the bug appeared?",
+    "What troubleshooting steps, logging attempts, or fixes have you already tried?",
+    "Can you supply console logs, network response payloads, or database query dumps from the time of the crash?",
+    "What system state, database records, or input data trigger this specific bug?",
+    "Are there strict resolution constraints, such as keeping the fix backward-compatible or avoiding core refactorings?"
+  ],
+  architecture: [
+    "What are the primary business goals, target scale (e.g., 10M DAU), and throughput/latency requirements?",
+    "Which architectural style or system pattern is preferred (e.g., Microservices, Monolithic, Event-Driven)?",
+    "What database engine, storage format, caching layer, or indexing strategy should be adopted?",
+    "What is the preferred tech stack, hosting provider (AWS, GCP), and container orchestrator (Kubernetes)?",
+    "What are the most critical non-functional requirements (e.g., scalability, high availability, maintainability)?",
+    "Which communication protocols and message brokers should connect the services (e.g., gRPC, REST, Kafka)?",
+    "What are the user authentication, data privacy, and security compliance constraints (e.g., OAuth2, GDPR)?",
+    "What kind of continuous integration, deployment pipeline, and monitoring systems are required (e.g., Prometheus, Grafana)?",
+    "Are there strict hosting budgets, infrastructure costs, or physical resource limits to respect?",
+    "What are the integration touchpoints with legacy systems or external third-party API services?"
+  ],
+  gui: [
+    "What is the target platform (Web, Mobile, Desktop) and target screen size (Responsive, Mobile-first)?",
+    "What core visual components (e.g., sidebar navigation, dashboard widgets, modal drawers) must be present?",
+    "What is the preferred color palette, theme orientation (dark mode, light mode), or HSL brand tokens?",
+    "What font families, typography weights, and text scaling rules should be applied?",
+    "What micro-animations, hover transition effects, or visual loading feedback states are required?",
+    "Which CSS framework, component library, or custom styling rules should be used (e.g., Tailwind CSS, Vanilla CSS)?",
+    "What are the specific accessibility guidelines (a11y), screen-reader properties, or keyboard navigations to implement?",
+    "What margin, padding, border radius, and flexbox/grid layout spaces should govern the components?",
+    "What graphical assets, SVG vectors, icon styles (e.g., Lucide), or logotypes must be integrated?",
+    "Are there specific responsive breakpoints or container width limitations to enforce?"
+  ]
+};
+
+function offlineMockQuestions(excludedQs, count, domain = 'image') {
+  const bank = OFFLINE_QUESTIONS[domain] || OFFLINE_QUESTIONS.image;
+  const excludedSet = new Set((excludedQs || []).map(s => s.toLowerCase().trim()));
+  const filtered = bank.filter(q => !excludedSet.has(q.toLowerCase().trim()));
+  return filtered.slice(0, count);
+}
+
+export async function classifyDomain(text, settings) {
+  if (settings.mode === 'ai') {
+    try {
+      const system = `You are the dynamic Priority Manager for a multi-domain prompt-building IDE. 
+Your job is to analyze the raw, connected prompt fragments and classify the overall target task into exactly ONE of these five categories:
+- "image" (digital art, visuals, rendering directives)
+- "code" (writing code, software functions, algorithmic logic)
+- "debug" (solving bugs, analyzing errors, fixing stack traces)
+- "architecture" (designing systems, DB schemas, hosting patterns)
+- "gui" (web UI layouts, CSS themes, front-end grid alignments)
+
+You must respond with STRICT JSON containing only your selection and a brief logic description:
+{"domain": "image" | "code" | "debug" | "architecture" | "gui", "reason": "Your brief classification logic"}`;
+
+      const user = `Analyze these prompt fragments:
+"${text}"
+
+Return JSON:`;
+      const raw = await callAI(system, user, settings);
+      const json = extractJson(raw);
+      if (json && ['image', 'code', 'debug', 'architecture', 'gui'].includes(json.domain)) {
+        return json.domain;
+      }
+    } catch (err) {
+      console.error("AI Domain classification failed, falling back to lexical classifier: ", err);
+    }
+  }
+
+  // Lexical / Rule-Based Classification (Pathway 1)
+  const t = (text || '').toLowerCase();
+  const scores = {
+    code: 0,
+    debug: 0,
+    architecture: 0,
+    gui: 0,
+    image: 0
+  };
+
+  const kw = {
+    code: ['function', 'import', 'class', 'def ', 'fn ', 'let ', 'const', 'typescript', 'rust', 'compile', 'runtime', 'javascript', 'react', 'node', 'v18', 'algorithm', 'sorting', 'route', 'json payload', 'return type', 'time complexity', 'o(1)', 'clean code', 'solid', 'dry', 'functional programming', 'unit test', 'jest', 'pytest', 'jsdoc', 'docstring'],
+    debug: ['typeerror', 'nullpointerexception', 'syntaxerror', 'crash', 'uncaught exception', 'stacktrace', 'bug', 'at line', 'console.log', 'expected behavior', 'failing code', 'failing method', 'actually returns', 'chrome devtools', 'local storage', 'docker container', 'git diff', 'commit history', 'tried replacing', 'attempted solution', 'debug log'],
+    architecture: ['architecture', 'microservices', 'scalability', 'high availability', 'throughput', 'kubernetes', 'monolith', 'serverless', 'mvc', 'event-driven', 'postgresql', 'nosql', 'mongodb', 'redis cache', 'replica', 'docker', 'cloud infrastructure', 'rest api', 'graphql', 'grpc', 'kafka', 'oauth2', 'jwt', 'gdpr compliance', 'prometheus', 'grafana'],
+    gui: ['navbar', 'sidebar', 'tailwind', 'flexbox', 'grid', 'css', 'hover', 'padding', 'margin', 'typography', 'dashboard card', 'modal dialog', 'glassmorphism', 'font family', 'inter', 'micro-animation', 'spinner', 'aria landmarks', 'alt text', 'border radius', 'svg icons', 'lucide'],
+    image: ['photorealistic', 'lighting', 'volumetric', 'camera', 'oil painting', 'render', 'man', 'woman', 'portrait', 'creature', 'zombie', 'dragon', 'robot', 'forest', 'hospital', 'city', 'ruins', 'screaming', 'floating', 'eerie', 'unsettling', 'candles', 'moonlight', 'ps1', 'retro', 'wide-shot', 'fisheye', 'film grain', 'chromatic aberration']
+  };
+
+  for (const [domain, list] of Object.entries(kw)) {
+    list.forEach(word => {
+      if (t.includes(word)) {
+        scores[domain] += 1;
+      }
+    });
+  }
+
+  let bestDomain = 'image'; // Default fallback
+  let maxScore = -1;
+  for (const [domain, score] of Object.entries(scores)) {
+    if (score > maxScore) {
+      maxScore = score;
+      bestDomain = domain;
+    }
+  }
+
+  return maxScore > 0 ? bestDomain : 'image';
+}
+
 // ------------------------------------------------------------
 // MAIN DYNAMIC NODE-BY-NODE COMPILER ENGINE
 // ------------------------------------------------------------
 
 export async function compileGraph(nodes, edges, settings) {
+  const { priorityDomain = 'auto' } = settings;
+  const canvasTexts = nodes.map(n => (n.data?.text || '') + ' ' + (n.data?.extractedMemory || '')).filter(Boolean).join('\n');
+  const activeDomain = priorityDomain === 'auto' 
+    ? await classifyDomain(canvasTexts, settings)
+    : priorityDomain;
+    
+  const activeCategories = DOMAINS[activeDomain] || DOMAINS.image;
+
   const stages = [];
   const items = [];
   const neg = [];
@@ -523,6 +710,14 @@ export async function compileGraph(nodes, edges, settings) {
     status: 'ok',
     type: 'info',
     desc: `Source of truth initialized.\nBaseline Positive: "${activePositive || '(empty)'}"\nBaseline Negative: "${activeNegative || '(empty)'}"`
+  });
+
+  // Stage 0.5: Priority Schema classification
+  stages.push({
+    name: `Compiler Priority Schema`,
+    status: 'ok',
+    type: priorityDomain === 'auto' ? 'ai' : 'info',
+    desc: `Active Domain: ${activeDomain.toUpperCase()} ${priorityDomain === 'auto' ? '(Auto-Detected)' : '(Manually Selected)'}\nSorting priority weights mapped successfully using ${Object.keys(activeCategories).length} dimensions.`
   });
 
   // Get topological execution path
@@ -566,7 +761,7 @@ export async function compileGraph(nodes, edges, settings) {
       if (g.type === 'and') {
         const cands = [A, B].filter(Boolean);
         cands.forEach(txt => {
-          items.push({ text: txt, ...categorize(txt), by: `AND (${g.id.slice(-4)})` });
+          items.push({ text: txt, ...categorize(txt, activeCategories), by: `AND (${g.id.slice(-4)})` });
         });
 
         if (settings.mode === 'ai') {
@@ -583,7 +778,7 @@ export async function compileGraph(nodes, edges, settings) {
             if (c && !activeArr.includes(c)) activeArr.push(c);
           });
           // Sort active arrays based on categories weight
-          const analyzed = activeArr.map(t => ({ text: t, ...categorize(t) }));
+          const analyzed = activeArr.map(t => ({ text: t, ...categorize(t, activeCategories) }));
           analyzed.sort((x, y) => y.priority - x.priority);
           
           activePositive = analyzed.map(x => x.text).join(', ');
@@ -601,7 +796,7 @@ export async function compileGraph(nodes, edges, settings) {
             activePositive = json.updated_prompt;
             items.push({ 
               text: json.selected === 'A' ? A : B, 
-              ...categorize(json.selected === 'A' ? A : B), 
+              ...categorize(json.selected === 'A' ? A : B, activeCategories), 
               by: `OR (${g.id.slice(-4)})` 
             });
             
@@ -612,14 +807,14 @@ export async function compileGraph(nodes, edges, settings) {
             // Offline Context Overlap Score
             let best = cands[0], bs = -1e9;
             cands.forEach(t => {
-              const s = contextScore(t, activePositive);
+              const s = contextScore(t, activePositive, activeCategories);
               if (s > bs) {
                 bs = s;
                 best = t;
               }
             });
 
-            items.push({ text: best, ...categorize(best), by: `OR (${g.id.slice(-4)})` });
+            items.push({ text: best, ...categorize(best, activeCategories), by: `OR (${g.id.slice(-4)})` });
             const dropped = cands.filter(t => t !== best);
             
             const activeArr = activePositive ? activePositive.split(', ').map(s => s.trim()) : [];
@@ -648,7 +843,7 @@ export async function compileGraph(nodes, edges, settings) {
             
             // We can also extract the newly added negation phrase and push to items for visualization
             const negatedTerm = `avoid ${A}`;
-            items.push({ text: negatedTerm, ...categorize(negatedTerm), by: `NOT AI (${g.id.slice(-4)})` });
+            items.push({ text: negatedTerm, ...categorize(negatedTerm, activeCategories), by: `NOT AI (${g.id.slice(-4)})` });
 
             traceDesc = `[AI Negation routing]\nSuppressed concept: "${A}"\nCompiled Prompt Sanitized & Updated:\n"${activePositive}"`;
             statusType = 'ai';
@@ -670,7 +865,7 @@ export async function compileGraph(nodes, edges, settings) {
               items[idxToDrop]._drop = `Suppressed by NOT Gate`;
             }
             
-            items.push({ text: negatedTerm, ...categorize(negatedTerm), by: `NOT (${g.id.slice(-4)})` });
+            items.push({ text: negatedTerm, ...categorize(negatedTerm, activeCategories), by: `NOT (${g.id.slice(-4)})` });
             traceDesc = `[Rule-based Negation]\nSuppressed concept: "${A}". Stripped positive references and appended "${negatedTerm}".\nResulting Prompt:\n"${activePositive}"`;
           }
         } else {
@@ -705,7 +900,7 @@ export async function compileGraph(nodes, edges, settings) {
           if (settings.mode === 'ai') {
             newQs = await aiAskQuestions(activePositive, [...existingQs, ...excludedQs], diff, settings, memoryInput);
           } else {
-            newQs = offlineMockQuestions([...existingQs, ...excludedQs], diff);
+            newQs = offlineMockQuestions([...existingQs, ...excludedQs], diff, activeDomain);
           }
           
           qs = [...existingQs, ...newQs];
@@ -931,7 +1126,7 @@ export async function compileGraph(nodes, edges, settings) {
         if (cands.length) {
           let best = cands[0], bs = -1e9;
           cands.forEach(t => {
-            const s = contextScore(t, activePositive);
+            const s = contextScore(t, activePositive, activeCategories);
             if (s > bs) { bs = s; best = t; }
           });
           const activeArr = activePositive ? activePositive.split(', ').map(s => s.trim()) : [];
@@ -953,10 +1148,12 @@ export async function compileGraph(nodes, edges, settings) {
           if (idxToDrop >= 0) {
             items[idxToDrop]._drop = `Suppressed by NOT Gate (Fallback)`;
           }
-          items.push({ text: negatedTerm, ...categorize(negatedTerm), by: `NOT (Fallback)` });
+          items.push({ text: negatedTerm, ...categorize(negatedTerm, activeCategories), by: `NOT (Fallback)` });
         }
       } else if (g.type === 'askQuestion') {
-        const qs = [...MOCK_QUESTIONS];
+        const count = g.data?.numQuestions !== undefined ? g.data.numQuestions : 3;
+        const bank = OFFLINE_QUESTIONS[activeDomain] || OFFLINE_QUESTIONS.image;
+        const qs = bank.slice(0, count);
         gateStates[gid] = { ...(gateStates[gid] || {}), questions: qs };
       } else if (g.type === 'answerQuestions') {
         const qEdge = edges.find((x) => x.target === gid && x.targetHandle === 'questions');
@@ -1069,7 +1266,7 @@ export async function compileGraph(nodes, edges, settings) {
   const activeArr = activePositive ? activePositive.split(', ').map(s => s.trim()) : [];
   const mappedItems = activeArr.map(t => {
     const existing = items.find(i => i.text === t);
-    return existing || { text: t, ...categorize(t), by: 'Pipeline Flow' };
+    return existing || { text: t, ...categorize(t, activeCategories), by: 'Pipeline Flow' };
   });
 
   // Apply final static conflict checks
@@ -1117,10 +1314,10 @@ export async function compileGraph(nodes, edges, settings) {
         }
       } catch (err) {
         console.error("Thinking AI generation failed, falling back to rule-based: ", err);
-        formattedPositive = offlineThinkingRephrase(keptOnly);
+        formattedPositive = offlineThinkingRephrase(keptOnly, activeCategories);
       }
     } else {
-      formattedPositive = offlineThinkingRephrase(keptOnly);
+      formattedPositive = offlineThinkingRephrase(keptOnly, activeCategories);
     }
   } else if (compilationMode === 'deep-thinking') {
     if (settings.mode === 'ai') {
@@ -1164,10 +1361,10 @@ export async function compileGraph(nodes, edges, settings) {
         }
       } catch (err) {
         console.error("DeepThinking AI generation failed, falling back to rule-based: ", err);
-        formattedPositive = offlineDeepThinkingSpec(keptOnly, activeNegative);
+        formattedPositive = offlineDeepThinkingSpec(keptOnly, activeNegative, activeCategories);
       }
     } else {
-      formattedPositive = offlineDeepThinkingSpec(keptOnly, activeNegative);
+      formattedPositive = offlineDeepThinkingSpec(keptOnly, activeNegative, activeCategories);
     }
   }
 
@@ -1228,61 +1425,75 @@ export async function compileGraph(nodes, edges, settings) {
 // OFFLINE HIGH-FIDELITY TEMPLATE BUILDERS
 // ------------------------------------------------------------
 
-function offlineThinkingRephrase(items) {
-  const groups = {
-    subject: [],
-    environment: [],
-    action: [],
-    emotion: [],
-    lighting: [],
-    style: [],
-    camera: [],
-    effects: [],
-    detail: []
-  };
+function offlineThinkingRephrase(items, categories = CATEGORIES) {
+  // If categories are the default image categories, run the specific rephraser
+  if (categories === CATEGORIES || Object.keys(categories).includes('subject')) {
+    const groups = {
+      subject: [], environment: [], action: [], emotion: [],
+      lighting: [], style: [], camera: [], effects: [], detail: []
+    };
+    items.forEach(item => {
+      if (groups[item.category]) {
+        groups[item.category].push(item.text);
+      }
+    });
+    
+    const subjectPart = groups.subject.length > 0 ? `the primary subject as ${groups.subject.join(' and ')}` : 'a focused primary subject';
+    const actionPart = groups.action.length > 0 ? `, actively performing: ${groups.action.join(', ')}` : '';
+    const envPart = groups.environment.length > 0 ? ` situated within the environment of ${groups.environment.join(', ')}` : '';
+    const emotionPart = groups.emotion.length > 0 ? `, strictly conveying a mood of ${groups.emotion.join(' and ')}` : '';
+    
+    const mainDirective = `Depict ${subjectPart}${actionPart}${envPart}${emotionPart}.`;
+    
+    const lightingPart = groups.lighting.length > 0 ? ` Enforce these lighting conditions: ${groups.lighting.join(', ')}.` : '';
+    const cameraPart = groups.camera.length > 0 ? ` Establish a camera perspective of: ${groups.camera.join(', ')}.` : '';
+    const stylePart = groups.style.length > 0 ? ` Render the overall artwork in the exact style of: ${groups.style.join(', ')}.` : '';
+    const effectsPart = groups.effects.length > 0 ? ` Apply these camera lens and rendering post-processing effects: ${groups.effects.join(', ')}.` : '';
+    const detailsPart = groups.detail.length > 0 ? ` Enforce strict compliance with these fine details: ${groups.detail.join(', ')}.` : '';
+    
+    return `${mainDirective}${lightingPart}${cameraPart}${stylePart}${effectsPart}${detailsPart}`.replace(/\s+/g, ' ');
+  }
+
+  // Generic dynamic domain thinking rephraser
+  const groups = {};
+  Object.entries(categories).forEach(([catKey, info]) => {
+    groups[catKey] = { label: info.label, items: [] };
+  });
+
   items.forEach(item => {
     if (groups[item.category]) {
-      groups[item.category].push(item.text);
+      groups[item.category].items.push(item.text);
     }
   });
-  
-  const subjectPart = groups.subject.length > 0 ? `the primary subject as ${groups.subject.join(' and ')}` : 'a focused primary subject';
-  const actionPart = groups.action.length > 0 ? `, actively performing: ${groups.action.join(', ')}` : '';
-  const envPart = groups.environment.length > 0 ? ` situated within the environment of ${groups.environment.join(', ')}` : '';
-  const emotionPart = groups.emotion.length > 0 ? `, strictly conveying a mood of ${groups.emotion.join(' and ')}` : '';
-  
-  const mainDirective = `Depict ${subjectPart}${actionPart}${envPart}${emotionPart}.`;
-  
-  const lightingPart = groups.lighting.length > 0 ? ` Enforce these lighting conditions: ${groups.lighting.join(', ')}.` : '';
-  const cameraPart = groups.camera.length > 0 ? ` Establish a camera perspective of: ${groups.camera.join(', ')}.` : '';
-  const stylePart = groups.style.length > 0 ? ` Render the overall artwork in the exact style of: ${groups.style.join(', ')}.` : '';
-  const effectsPart = groups.effects.length > 0 ? ` Apply these camera lens and rendering post-processing effects: ${groups.effects.join(', ')}.` : '';
-  const detailsPart = groups.detail.length > 0 ? ` Enforce strict compliance with these fine details: ${groups.detail.join(', ')}.` : '';
-  
-  return `${mainDirective}${lightingPart}${cameraPart}${stylePart}${effectsPart}${detailsPart}`.replace(/\s+/g, ' ');
+
+  const parts = [];
+  const sortedCats = Object.entries(categories).sort((x, y) => y[1].p - x[1].p);
+  sortedCats.forEach(([catKey, info]) => {
+    const list = groups[catKey]?.items || [];
+    if (list.length > 0) {
+      parts.push(`Enforce ${info.label} directives: ${list.join(', ')}.`);
+    }
+  });
+
+  return parts.join(' ');
 }
 
-function offlineDeepThinkingSpec(items, negativeText) {
-  const groups = {
-    subject: [],
-    environment: [],
-    action: [],
-    emotion: [],
-    lighting: [],
-    style: [],
-    camera: [],
-    effects: [],
-    detail: []
-  };
-  items.forEach(item => {
-    if (groups[item.category]) {
-      groups[item.category].push(item.text);
-    }
-  });
+function offlineDeepThinkingSpec(items, negativeText, categories = CATEGORIES) {
+  // If categories are the default image categories
+  if (categories === CATEGORIES || Object.keys(categories).includes('subject')) {
+    const groups = {
+      subject: [], environment: [], action: [], emotion: [],
+      lighting: [], style: [], camera: [], effects: [], detail: []
+    };
+    items.forEach(item => {
+      if (groups[item.category]) {
+        groups[item.category].push(item.text);
+      }
+    });
 
-  const formatSublist = (arr, label) => arr.length > 0 ? arr.map(x => `  - ${x}`).join('\n') : `  - ${label} unspecified`;
+    const formatSublist = (arr, label) => arr.length > 0 ? arr.map(x => `  - ${x}`).join('\n') : `  - ${label} unspecified`;
 
-  return `# STRICT VISUAL DIRECTION BRIEF (PLG OFFLINE COMPILER)
+    return `# STRICT VISUAL DIRECTION BRIEF (PLG OFFLINE COMPILER)
 
 ## 1. PRIMARY SUBJECT & ACTION COMMANDS
 * **Subject Directives**: You must depict the primary subject as:
@@ -1313,5 +1524,46 @@ ${formatSublist(groups.detail, 'Details')}
 ## 5. MANDATORY SUPPRESSIONS & EXCLUSIONS
 * **Suppressions**: You must absolutely avoid and exclude these concepts:
 ${items.filter(x => x.text.startsWith('avoid ') || x.text.startsWith('do not ') || x.text.startsWith('without ')).length > 0 ? items.filter(x => x.text.startsWith('avoid ') || x.text.startsWith('do not ') || x.text.startsWith('without ')).map(x => `  - ${x.text.replace(/^(avoid\s+|do\s+not\s+use\s+|without\s+)/i, '')}`).join('\n') : '  - None suppressed'}`;
+  }
+
+  // Generic Dynamic Deep Brief
+  let brief = `# STRICT DOMAIN DIRECTION BRIEF (PLG OFFLINE COMPILER)\n\n`;
+  const sortedCats = Object.entries(categories).sort((x, y) => y[1].p - x[1].p);
+  
+  // Group items
+  const groups = {};
+  sortedCats.forEach(([catKey, info]) => {
+    groups[catKey] = [];
+  });
+  items.forEach(item => {
+    if (groups[item.category]) {
+      groups[item.category].push(item.text);
+    }
+  });
+
+  sortedCats.forEach(([catKey, info], idx) => {
+    const list = groups[catKey] || [];
+    brief += `## ${idx + 1}. ${info.label.toUpperCase()} COMMANDS\n`;
+    if (list.length > 0) {
+      list.forEach(val => {
+        brief += `* **Directive**: Enforce ${info.label} constraint: ${val}\n`;
+      });
+    } else {
+      brief += `* ${info.label} directives unspecified.\n`;
+    }
+    brief += `\n`;
+  });
+
+  brief += `## MANDATORY SUPPRESSIONS & EXCLUSIONS\n`;
+  const suppressions = items.filter(x => x.text.startsWith('avoid ') || x.text.startsWith('do not ') || x.text.startsWith('without '));
+  if (suppressions.length > 0) {
+    suppressions.forEach(x => {
+      brief += `* **Suppressed**: ${x.text.replace(/^(avoid\s+|do\s+not\s+use\s+|without\s+)/i, '')}\n`;
+    });
+  } else {
+    brief += `* None suppressed.\n`;
+  }
+
+  return brief;
 }
 

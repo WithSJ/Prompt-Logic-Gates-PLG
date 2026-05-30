@@ -2,7 +2,15 @@
 
 This is an append-only chronological ledger tracking major engineering steps, research document ingestions, compiler features, and visual architecture revisions.
 
----
+## [2026-05-30] refine | Implement Dynamic Multi-Domain Priority Schema & Priority Manager
+- **Action**: Conceived, styled, and built the complete **Multi-Domain Compiler Priority Selector** and **Priority Manager** dynamic sorting engine, implementing dynamic schema priority mapping, dynamic lexical/AI domain classification, dynamic deep visual briefs, and dynamic offline clarification questions catalog.
+- **Details**:
+  - **Dynamic Dropdown UI**: Styled and rendered a premium visual `<select>` control (`.priority-select`) in the right sidebar Inspector above the Compilation Depth control, featuring dynamic color-changing visual indicator accents matching the active domain.
+  - **Auto-Detect Classifier**: Implemented the dual-pathway classifier `classifyDomain(text, settings)` in [semanticCompiler.js](../src/compiler/semanticCompiler.js). It performs fast lexical keyword analysis in rule-based mode, and structured LLM API JSON classification queries in AI mode to dynamically determine the compilation profile.
+  - **Multi-Domain Priority Weights**: Integrated the five core domains (`image`, `code`, `debug`, `architecture`, `gui`) and their 9-dimensional priority weights and keyword dictionaries from the Obsidian specification sheet.
+  - **Generic Dynamic Templates**: Refactored the offline thinking paragraph generator (`offlineThinkingRephrase`) and the deep-thinking Visual Brief generator (`offlineDeepThinkingSpec`) to dynamically adapt and group prompt details under domain-specific categories.
+  - **Domain-Specific Clarification Questions**: Configured the offline rule-based Ask AI Questions catalog `OFFLINE_QUESTIONS` to fetch targeted questions based on the active domain (such as language dependencies for code, stack traces for bugs).
+  - **Build Integrity Verified**: Compiled the production bundle successfully using `npm run build` with zero Rollup or linting errors.
 
 ## [2026-05-30] design | Design Multi-Domain Prompt Priority Schema & Priority Manager
 - **Action**: Conceived and specified a multi-domain dynamic sorting architecture for the semantic compiler, introducing specialized prompt priority dimensions and offline template question banks for Programming, Debugging, System Architecture, and GUI layout tasks.

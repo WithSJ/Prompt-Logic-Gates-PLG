@@ -78,6 +78,25 @@ function PLGApp() {
     showToast(`Compilation Depth set to ${mode === 'normal' ? 'Normal' : mode === 'thinking' ? 'Thinking' : 'DeepThinking'}`, 'info');
   };
 
+  const [priorityDomain, setPriorityDomain] = useState(() => {
+    return Store.get('plg_priority_domain') || 'auto';
+  });
+
+  // Sync priority domain to LocalStorage
+  useEffect(() => {
+    Store.set('plg_priority_domain', priorityDomain);
+  }, [priorityDomain]);
+
+  const handlePriorityDomainChange = (domain) => {
+    setPriorityDomain(domain);
+    const label = domain === 'auto' ? 'Auto Detect' : 
+                  domain === 'image' ? 'Image Generation' :
+                  domain === 'code' ? 'Code Generation' :
+                  domain === 'debug' ? 'Bug Debugging' :
+                  domain === 'architecture' ? 'Software Architecture' : 'GUI Design';
+    showToast(`Compiler Priority Schema set to ${label}`, 'info');
+  };
+
   // Toast handler
   const showToast = useCallback((text, type = 'info') => {
     setToast({ show: true, type, text });
@@ -781,7 +800,7 @@ ${rulesMd}
   const handleCompile = async () => {
     setIsCompiling(true);
     try {
-      const result = await compileGraph(nodes, edges, { ...settings, compilationMode });
+      const result = await compileGraph(nodes, edges, { ...settings, compilationMode, priorityDomain });
       setCompileResult(result);
       
       // Sync compiled outputs back into File Node and resolve states for File Viewer nodes
@@ -1399,6 +1418,8 @@ ${rulesMd}
           fileTitle={fileTitle}
           compilationMode={compilationMode}
           onChangeCompilationMode={handleCompilationModeChange}
+          priorityDomain={priorityDomain}
+          onChangePriorityDomain={handlePriorityDomainChange}
         />
       </div>
 
