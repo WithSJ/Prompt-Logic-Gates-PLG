@@ -275,11 +275,11 @@ Click **New** in the top bar. After confirmation, the workspace resets to the de
 
 ### Expected Output
 ```text
-Compiled Prompt: "write a function that retrieves a user object using fetch_data and updates userId in local storage (Memory Constraints: [[userId] rule: camelCase Variable; [fetch_data] rule: Function Signature])"
+Compiled Prompt: "write a function that retrieves a user object using fetch_data and updates userId in local storage. Enforce userId: camelCase Variable. Enforce fetch_data: Function Signature."
 ```
 
 ### What Happened
 The compiler matched the loosely-typed `fetch_data` and `userId` keywords inside your prompt fragment against the memory ledger. 
-- In **Offline Mode**, it performed an in-place lexical word swap, correcting `FETCH_DATA` to `fetch_data` and `USERID` to `userId`, and appended the explicit constraints at the end.
+- In **Offline Mode**, it performed an in-place lexical word swap, correcting `FETCH_DATA` to `fetch_data` and `USERID` to `userId`, and appended the explicit commanding instructions at the end.
 - In **AI Mode**, it fed the entire memory ledger as a system constraint block to the LLM, instructing it to strictly preserve casing.
 - The **Pipeline Debugger** stage "Context Memory Verification" will show a green checkmark `✓ Checked and matched 2 exact memory term(s)`.

@@ -93,9 +93,9 @@ During topological compilation, if `contextMemory` is connected as an in-line al
 ### Offline Rule-Based Prompt Expansion:
 In offline mode, the compiler parses the Markdown memory ledger into a key-value rules map:
 1.  **Casing Correction**: Automatically performs case-insensitive word searches on the baseline prompt, replacing loose terms with the exact, casing-sensitive representations (e.g. replacing `FetchData` with the exact signature `fetch_data(id)`).
-2.  **Semantic Constraint Injection**: If the prompt baseline contains a matched memory term, the compiler extracts the associated rule description from the ledger and appends it as an active prompt constraint in parenthesized notation:
-    $$\text{Prompt} = \text{Baseline Prompt} + \text{" (Memory Constraints: [[Term] rule: [Description]])"}$$
-3.  This ensures that rule-based compiles remain 100% compliant with documentation without requiring external LLM tokens.
+2.  **Semantic Constraint Injection**: If the prompt baseline contains a matched memory term, the compiler extracts the associated rule description from the ledger and appends it as a direct visual directive sentence:
+    $$\text{Prompt} = \text{Baseline Prompt} + \text{" Enforce [Term]: [Description]."}$$
+3.  This ensures that rule-based compiles remain 100% compliant with the specs in a direct, commanding tone without requiring external LLM tokens.
 
 ---
 

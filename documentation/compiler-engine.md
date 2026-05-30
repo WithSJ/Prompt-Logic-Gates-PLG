@@ -289,11 +289,11 @@ In **Offline (Rule-based) Mode**, the compiler parses the Markdown memory ledger
 3.  If a match is found, the compiler performs an **in-place lexical word swap** to restore the exact, case-sensitive variable casing defined in the memory ledger.
 
 ### C. Semantic Rules Injection Formula
-If a matched memory term also includes a corresponding constraint rule or description, the compiler appends it as a parenthesized constraint at the very end of the baseline:
+If a matched memory term also includes a corresponding constraint rule or description, the compiler appends it as a direct visual directive sentence at the very end of the baseline:
 
-$$\text{Prompt} = \text{Baseline Prompt} + \text{" (Memory Constraints: [[Term] rule: [Description]; ...])"}$$
+$$\text{Prompt} = \text{Baseline Prompt} + \text{" Enforce [Term]: [Description]."}$$
 
-This ensures that rule-based compiles remain fully aligned with technical constraints and documentation instructions without requiring external API calls.
+This ensures that rule-based compiles remain fully aligned with technical constraints and directive instructions without requiring external API calls, keeping the tone active and command-oriented without referencing raw technical documents in the final output.
 
 ### D. Context Memory Verification Check
 At the end of the compilation execution, a validation pass checks the fully compiled prompt against the extracted memory keywords:

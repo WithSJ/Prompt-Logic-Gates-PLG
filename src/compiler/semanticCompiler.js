@@ -356,26 +356,26 @@ function extractJson(s) {
 
 // 1. AI Conjunction (AND) Gate execution
 async function aiGateAnd(baselinePos, A, B, settings, memoryContent) {
-  let system = `You are the AI compiler for an "AND Gate" inside a visual prompt-building IDE. Your job is to take the current positive prompt baseline and merge it with two new prompt fragments (A and B). You must merge them into a single, cohesive positive prompt: (1) rank foundational elements (subjects, environments) first, style/modifiers later; (2) remove duplicates or highly redundant statements; (3) maintain proper flow. Respond with ONLY the optimized, merged positive prompt text, no markdown, no quotes, no extra commentary.`;
+  let system = `You are the AI compiler for an "AND Gate" inside a visual prompt-building IDE. Your job is to take the current prompt baseline and merge it with two new prompt fragments (A and B). You must merge them into a single, cohesive Compiled Prompt using strict, directive, and commanding language (e.g., 'Depict...', 'Render...', 'Enforce...'). Speak directly to the downstream AI model, giving direct visual instructions on what to compile. (1) rank foundational elements (subjects, environments) first, style/modifiers later; (2) remove duplicates; (3) maintain proper flow. Do not use any phrases like "according to memory", "based on fragment A", "merged prompt", or any meta-labels. Output a single seamless set of commanding directions. Respond with ONLY the optimized Compiled Prompt text, no markdown, no quotes, no extra commentary.`;
   
   if (memoryContent) {
-    system += `\n\nCRITICAL CONSTRAINT: You MUST align the compiled prompt with the following Context Memory of terms, variables, functions, and rules. Use exact terms, spelling, and casing as described in the memory:\n${memoryContent}`;
+    system += `\n\nCRITICAL CONSTRAINT: You MUST preserve and exactly employ the casing, spelling, variables, and function names present in the following Context Memory. Frame them as direct visual directives:\n${memoryContent}`;
   }
 
-  const user = `Baseline Positive Prompt So Far:\n"${baselinePos || '(empty)'}"\n\nNew Fragment A: "${A || '(none)'}"\nNew Fragment B: "${B || '(none)'}"\n\nReturn the merged prompt:`;
+  const user = `Baseline Prompt So Far:\n"${baselinePos || '(empty)'}"\n\nNew Fragment A: "${A || '(none)'}"\nNew Fragment B: "${B || '(none)'}"\n\nReturn the merged prompt:`;
   const raw = await callAI(system, user, settings);
   return (raw || '').trim();
 }
 
 // 2. AI Context Selector (OR) Gate execution
 async function aiGateOr(baselinePos, A, B, settings, memoryContent) {
-  let system = `You are the AI compiler for an "OR Gate" inside a visual prompt-building IDE. Your job is to read the current positive prompt context and evaluate two competing candidate prompt fragments (A and B). You must select the SINGLE best candidate that is most semantically compatible with the current context, explain your choice in one sentence, and output the updated positive prompt. Respond with STRICT JSON in this format: {"selected": "A" or "B", "reason": "Your brief explanation", "updated_prompt": "The consolidated prompt including the chosen candidate"}`;
+  let system = `You are the AI compiler for an "OR Gate" inside a visual prompt-building IDE. Your job is to read the current prompt context and evaluate two competing candidate prompt fragments (A and B). You must select the SINGLE best candidate that is most semantically compatible with the current context, explain your choice in one sentence, and output the updated Compiled Prompt. Ensure the "updated_prompt" is phrased strictly as a direct command/direction to the generator (e.g., 'Depict...', 'Enforce...'), with absolutely no meta-text, no mention of A or B, and no references to "selected choice" or "according to context". Respond with STRICT JSON in this format: {"selected": "A" or "B", "reason": "Your brief explanation", "updated_prompt": "The consolidated prompt including the chosen candidate phrased as a direct command"}`;
   
   if (memoryContent) {
-    system += `\n\nCRITICAL CONSTRAINT: Evaluate the context matching and select the candidate strictly aligned with the following Context Memory rules and vocabulary:\n${memoryContent}`;
+    system += `\n\nCRITICAL CONSTRAINT: Select the candidate strictly aligned with the following Context Memory and ensure the updated_prompt employs exact variable casings:\n${memoryContent}`;
   }
 
-  const user = `Baseline Positive Prompt Context So Far:\n"${baselinePos || '(empty)'}"\n\nCandidate Prompt A: "${A || '(none)'}"\nCandidate Prompt B: "${B || '(none)'}"\n\nReturn JSON:`;
+  const user = `Baseline Context So Far:\n"${baselinePos || '(empty)'}"\n\nCandidate Prompt A: "${A || '(none)'}"\nCandidate Prompt B: "${B || '(none)'}"\n\nReturn JSON:`;
   const raw = await callAI(system, user, settings);
   const json = extractJson(raw);
   if (!json || !json.selected) throw new Error('Bad OR Gate AI JSON structure');
@@ -384,10 +384,10 @@ async function aiGateOr(baselinePos, A, B, settings, memoryContent) {
 
 // 3. AI Negation Routing (NOT) Gate execution
 async function aiGateNot(baselinePos, A, settings, memoryContent) {
-  let system = `You are the AI compiler for a "NOT Gate" inside a visual prompt-building IDE. Your job is to read the current prompt baseline and a concept to suppress (A). You must: (1) strip any positive trace or reference of A from the prompt if it exists, (2) append a natural clause or instruction explicitly stating not to do, use, or include A and related concepts (e.g. "avoid A", "without A", "do not include A"). Respond with STRICT JSON in this format: {"updated_positive": "The sanitized prompt with explicit negation instructions built-in"}`;
+  let system = `You are the AI compiler for a "NOT Gate" inside a visual prompt-building IDE. Your job is to read the current prompt baseline and a concept to suppress (A). You must: (1) strip any positive trace or reference of A from the prompt if it exists, (2) append a strict commanding instruction explicitly stating not to do, use, or include A (e.g. "avoid A", "do not include A", "never employ A"). Ensure the updated_positive prompt does not mention "sanitized", "NOT gate", "concept A", or document references in its text. It must be phrased strictly as direct visual commands. Respond with STRICT JSON in this format: {"updated_positive": "The sanitized prompt with explicit commanding negation instructions built-in"}`;
   
   if (memoryContent) {
-    system += `\n\nCRITICAL CONSTRAINT: Ensure no exact variables or terms from the Context Memory are altered unless explicitly negated, and maintain strict consistency with it:\n${memoryContent}`;
+    system += `\n\nCRITICAL CONSTRAINT: Ensure no exact variables from the Context Memory are altered unless explicitly negated, and preserve variable casing exactly:\n${memoryContent}`;
   }
 
   const user = `Baseline Prompt:\n"${baselinePos || '(empty)'}"\n\nConcept to Suppress (NOT A): "${A || '(none)'}"\n\nReturn JSON:`;
@@ -451,15 +451,15 @@ You must respond with STRICT JSON containing a list of strings: {"questions": ["
 
 // AI Refinement of prompt based on questions and answers
 async function aiRefineAnswers(baselinePos, questions, answers, settings, memoryContent) {
-  let system = `You are an expert AI prompt engineer. Your job is to take a baseline positive prompt, a list of clarifying questions, and the user's typed answers, and synthesize them into a single, cohesive, highly optimized positive prompt.
+  let system = `You are an expert AI prompt engineer. Your job is to take a baseline prompt, a list of clarifying questions, and the user's typed answers, and synthesize them into a single, cohesive, highly optimized Compiled Prompt using a commanding and directive style (e.g. 'Depict...', 'Enforce...'). Speak directly to the downstream generator model, giving strict instructions.
 You must:
-1. Merge the answers naturally and seamlessly into the flow of the baseline prompt.
-2. Maintain proper structure (foundational details first, modifier elements later).
-3. Do NOT include the questions or literal "Clarification on Q..." strings. Just output the refined, integrated prompt text.
+1. Merge the answers naturally and seamlessly as direct visual commands.
+2. Maintain proper structure (foundational directives first, modifier commands later).
+3. Do NOT include the questions, literal "Clarification on Q..." strings, or any labels like "Answer to question 1". The output must be pure direct visual instructions for the AI generator model, with absolutely no references to the clarifying session.
 4. Keep the output extremely clean. Respond with ONLY the optimized, merged positive prompt text. No markdown, no quotes, no extra commentary.`;
 
   if (memoryContent) {
-    system += `\n\nCRITICAL CONSTRAINT: Align the refined prompt exactly with the terms, variables, and syntax specified in the Context Memory:\n${memoryContent}`;
+    system += `\n\nCRITICAL CONSTRAINT: Align the refined prompt exactly with the terms, variables, and syntax specified in the Context Memory. Frame them as imperative commands:\n${memoryContent}`;
   }
 
   const qas = [];
@@ -478,15 +478,15 @@ You must:
 // AI Context Memory alignment compiler
 async function aiAlignPromptWithMemory(incomingPrompt, memoryContent, settings) {
   const system = `You are a principal prompt alignment compiler inside a visual prompt-building IDE.
-Your task is to take an incoming prompt baseline, and rewrite and design it to strictly align with the provided Context Memory (which contains exact files, hierarchies, variables, schemas, and style rules).
+Your task is to take an incoming prompt baseline, and rewrite it to strictly align with the provided Context Memory using a highly commanding and directive style (e.g. 'Depict...', 'Enforce...', 'Apply...'). Speak directly to the downstream AI generator model, giving strict instructions. Do not write a passive description, and never write 'according to the memory document', 'as per context memory', or 'memory constraints'. Convert the specifications, variables, and rules into direct, imperative commands. NEVER mention "Context Memory", "the document", "memory specifications", or "the rules say". Translate all definitions and memory rules directly into active, commanding prompt instructions. For example, if a variable 'theme' is defined as 'dark forest', write: 'Enforce a dark forest theme.' rather than 'According to context memory, theme is dark forest.'
 
 If the incoming prompt contains any reference, abbreviation, or keyword that matches an entry, variable, function name, or file section in the Context Memory (even a loose or case-insensitive match):
-1. You MUST fully expand and design the prompt in rich detail according to the complete specifications, guidelines, syntax, and rules of that memory catalog entry.
-2. If the user refers to a concept at a high level (e.g. "mempalace recovery" or "agents logic"), pull in the actual structure, variables (like "dimensionality"), function signatures, and constraints from the corresponding wing/room/hall of the Context Memory to compose a complete, highly detailed prompt reflecting the actual structure and constraints.
+1. You MUST fully expand and design the prompt in rich detail according to the complete specifications, guidelines, syntax, and rules of that memory catalog entry, framing them as direct commands.
+2. If the user refers to a concept at a high level (e.g. "mempalace recovery" or "agents logic"), pull in the actual structure, variables (like "dimensionality"), function signatures, and constraints from the corresponding wing/room/hall of the Context Memory and phrase them as imperative directives.
 3. Strictly employ the exact case-sensitive variables, function names, and file rules from the memory ledger. Do not translate or modify them.
-4. Ensure all baseline concepts are preserved, but completely designed and contextualized according to the memory ledger.
+4. Ensure all baseline concepts are preserved, but completely designed and contextualized as direct instructions.
 
-Respond with ONLY the optimized, fully-designed positive prompt text, with no markdown, no quotes, and no conversational preambles.`;
+Respond with ONLY the optimized, fully-designed Compiled Prompt text, with no markdown, no quotes, and no conversational preambles.`;
 
   const user = `Incoming Prompt Baseline:\n"${incomingPrompt || '(empty)'}"\n\nContext Memory:\n${memoryContent}\n\nReturn the aligned prompt:`;
   const raw = await callAI(system, user, settings);
@@ -834,7 +834,7 @@ export async function compileGraph(nodes, edges, settings) {
                   if (desc && desc.length > 5) {
                     // Check if not already in prompt
                     if (!corrected.toLowerCase().includes(desc.toLowerCase())) {
-                      enrichedAdditions.push(`${term} rule: ${desc}`);
+                      enrichedAdditions.push(`Enforce ${term}: ${desc}.`);
                     }
                   }
                 }
@@ -852,9 +852,13 @@ export async function compileGraph(nodes, edges, settings) {
               }
             });
             
-            // 3. Append matched memory rules to design the prompt completely according to the memory
+            // 3. Append matched memory rules as direct commanding instructions
             if (enrichedAdditions.length > 0) {
-              corrected = corrected + ` (Memory Constraints: [${enrichedAdditions.join('; ')}])`;
+              corrected = corrected.trim();
+              if (corrected && !corrected.endsWith('.')) {
+                corrected += '.';
+              }
+              corrected = corrected + ' ' + enrichedAdditions.join(' ');
             }
             
             activePositive = corrected;
@@ -1025,7 +1029,7 @@ export async function compileGraph(nodes, edges, settings) {
               if (regex.test(corrected)) {
                 corrected = corrected.replace(regex, term);
                 if (desc && desc.length > 5 && !corrected.toLowerCase().includes(desc.toLowerCase())) {
-                  enrichedAdditions.push(`${term} rule: ${desc}`);
+                  enrichedAdditions.push(`Enforce ${term}: ${desc}.`);
                 }
               }
             }
@@ -1041,8 +1045,13 @@ export async function compileGraph(nodes, edges, settings) {
             }
           });
           
+          // 3. Append matched memory rules as direct commanding instructions
           if (enrichedAdditions.length > 0) {
-            corrected = corrected + ` (Memory Constraints: [${enrichedAdditions.join('; ')}])`;
+            corrected = corrected.trim();
+            if (corrected && !corrected.endsWith('.')) {
+              corrected += '.';
+            }
+            corrected = corrected + ' ' + enrichedAdditions.join(' ');
           }
           activePositive = corrected;
         }
@@ -1094,11 +1103,11 @@ export async function compileGraph(nodes, edges, settings) {
   if (compilationMode === 'thinking') {
     if (settings.mode === 'ai') {
       try {
-        let systemPrompt = `You are a professional prompt architect. Your task is to take a raw list of prompt tokens and rephrase them into a cohesive, natural, highly detailed, and beautifully styled positive prompt. Enhance the visual descriptors, vocabulary, and sensory details while retaining all original concepts. Output ONLY the rephrased prompt itself, with NO quotes, NO introductory text, and NO markdown.`;
+        let systemPrompt = `You are a principal prompt architect. Your task is to compile the given visual prompt elements into a highly commanding, strict, and directive prompt baseline. Use direct, imperative language (e.g., 'Depict...', 'Render...', 'Ensure...', 'Apply...') that gives clear visual instructions to the downstream AI generator. Avoid neutral, passive document style or metadata tags. Speak directly to the generator AI, telling it exactly what to compile and construct. Never include any meta-references like "Visual prompt elements", "compiled from nodes", "according to memory", or other document-referencing phrasing. Speak strictly and authoritatively to the downstream image/text generator. Output ONLY the directive prompt baseline itself, with NO quotes, NO introductory text, and NO markdown.`;
         
         const memoryContent = getMemoryInput(nodes, edges, ''); // Canvas-wide fallback
         if (memoryContent) {
-          systemPrompt += `\n\nCRITICAL CONSTRAINT: You MUST preserve and exactly employ the casing, spelling, variables, and function names present in the following Context Memory. Do not translate, paraphrase or modify them:\n${memoryContent}`;
+          systemPrompt += `\n\nCRITICAL CONSTRAINT: You MUST preserve and exactly employ the casing, spelling, variables, and function names present in the following Context Memory. Frame them strictly as imperative, case-sensitive variable constraints:\n${memoryContent}`;
         }
 
         const userPrompt = `Raw Prompt elements: ${finalKept}`;
@@ -1116,36 +1125,36 @@ export async function compileGraph(nodes, edges, settings) {
   } else if (compilationMode === 'deep-thinking') {
     if (settings.mode === 'ai') {
       try {
-        let systemPrompt = `You are a principal prompt architect and visual director. Your task is to compile the given visual prompt elements into an exhaustive, highly structured prompt specification document. 
+        let systemPrompt = `You are a principal prompt architect and visual director. Your task is to compile the given visual prompt elements into an exhaustive, highly commanding visual direction brief for the downstream AI generator. Speak in a strict, directive tone, instructing the AI model exactly what to construct. Use imperative verbs (e.g., 'Depict', 'Enforce', 'Place', 'Illuminate', 'Apply', 'Exclude'). Ensure that under all sections, the guidelines are framed strictly as active commands and never reference documents, nodes, or memory sources.
         Organize the output into these distinct sections using a premium Markdown layout:
         
-        # VISUAL SPECIFICATION DOCUMENT
+        # STRICT VISUAL DIRECTION BRIEF
         
-        ## 1. PRIMARY SUBJECT & DIRECTIVES
-        - **Focus**: [Subject details]
-        - **Action/Narrative**: [Vivid description of subject actions]
-        - **Emotional Profile**: [Expressions and mood]
+        ## 1. PRIMARY SUBJECT & ACTION COMMANDS
+        - **Subject Directives**: You must depict the primary subject as... [imperative subject rules]
+        - **Action Commands**: Enforce these active behaviors and actions...
+        - **Mood & Atmosphere**: Establish a strict emotional profile and atmosphere of...
         
-        ## 2. ENVIRONMENT & SPACE
-        - **Location & Architecture**: [Spatial settings and background elements]
-        - **Atmosphere & Depth**: [Climate, depth levels, and environmental details]
+        ## 2. COMPOSITION & ENVIRONMENT INSTRUCTIONS
+        - **Spatial Setting**: Place the scene strictly within the environment of...
+        - **Depth & Scale**: Construct a sense of depth, scale, and background detailing using...
         
-        ## 3. LIGHTING & COMPOSITION
-        - **Lighting setup**: [Types, directions, colors, and shadows]
-        - **Camera Framing**: [Shot type, lens, angle, and distance]
+        ## 3. CAMERA & LIGHTING CONTROLS
+        - **Lighting setup**: You must illuminate the scene using... [lighting commands, colors, shadows]
+        - **Camera Perspective**: Capture this scene from the perspective of... [framing, lens, angle, and distance commands]
         
         ## 4. STYLE & TECHNICAL ARTISTRY
-        - **Art Medium**: [Style description, artistic emulations]
-        - **Effects & Grading**: [Grain, lens effects, particles, post-processing]
+        - **Artistic Style**: Render the artwork in the exact style of... [style details, medium, artistic emulations]
+        - **Lens & Render Effects**: Apply these visual post-processing, lens, or rendering effects...
         
-        ## 5. NEGATIVE DIRECTIVES
-        - **Explicitly Suppress**: [Instruct to avoid these negative/suppressed concepts]
+        ## 5. MANDATORY SUPPRESSIONS & EXCLUSIONS
+        - **Strict Suppressions**: You must absolutely avoid and exclude these concepts: [Suppressions based on: ${activeNegative || 'none'}]
         
-        Integrate all raw prompt elements naturally. Do not include meta-commentary or preambles. Output ONLY the beautifully structured Markdown specifications block.`;
+        Integrate all raw prompt elements naturally. Do not include meta-commentary, preambles, or passive descriptions. Speak strictly as a director giving direct commands. Output ONLY the beautifully structured Markdown brief.`;
         
         const memoryContent = getMemoryInput(nodes, edges, ''); // Canvas-wide fallback
         if (memoryContent) {
-          systemPrompt += `\n\nCRITICAL CONSTRAINT: Preserve and exactly employ the casing, spelling, variables, and function names present in this Context Memory to ensure absolute code consistency:\n${memoryContent}`;
+          systemPrompt += `\n\nCRITICAL CONSTRAINT: Preserve and exactly employ the casing, spelling, variables, and function names present in this Context Memory. Frame them strictly as imperative, case-sensitive variable constraints:\n${memoryContent}`;
         }
 
         const userPrompt = `Raw Prompt elements: ${finalKept}`;
@@ -1237,17 +1246,20 @@ function offlineThinkingRephrase(items) {
     }
   });
   
-  const subjectPart = groups.subject.length > 0 ? groups.subject.join(' and ') : 'a focused subject';
-  const actionPart = groups.action.length > 0 ? `, actively ${groups.action.join(', ')}` : '';
-  const envPart = groups.environment.length > 0 ? ` set within a highly detailed ${groups.environment.join(', ')}` : '';
-  const emotionPart = groups.emotion.length > 0 ? `, evoking a strong sense of ${groups.emotion.join(' and ')}` : '';
-  const lightingPart = groups.lighting.length > 0 ? `. The scene is beautifully illuminated with ${groups.lighting.join(', ')} lighting` : '';
-  const cameraPart = groups.camera.length > 0 ? `, captured from a stunning ${groups.camera.join(', ')} perspective` : '';
-  const stylePart = groups.style.length > 0 ? `. The artistic aesthetic is rendered in ${groups.style.join(', ')} style` : '';
-  const effectsPart = groups.effects.length > 0 ? ` with subtle ${groups.effects.join(', ')} visual effects` : '';
-  const detailsPart = groups.detail.length > 0 ? `. Enriched with intricate details including ${groups.detail.join(', ')}` : '';
+  const subjectPart = groups.subject.length > 0 ? `the primary subject as ${groups.subject.join(' and ')}` : 'a focused primary subject';
+  const actionPart = groups.action.length > 0 ? `, actively performing: ${groups.action.join(', ')}` : '';
+  const envPart = groups.environment.length > 0 ? ` situated within the environment of ${groups.environment.join(', ')}` : '';
+  const emotionPart = groups.emotion.length > 0 ? `, strictly conveying a mood of ${groups.emotion.join(' and ')}` : '';
   
-  return `A masterpiece showcasing ${subjectPart}${actionPart}${envPart}${emotionPart}${lightingPart}${cameraPart}${stylePart}${effectsPart}${detailsPart}.`.replace(/\s+/g, ' ');
+  const mainDirective = `Depict ${subjectPart}${actionPart}${envPart}${emotionPart}.`;
+  
+  const lightingPart = groups.lighting.length > 0 ? ` Enforce these lighting conditions: ${groups.lighting.join(', ')}.` : '';
+  const cameraPart = groups.camera.length > 0 ? ` Establish a camera perspective of: ${groups.camera.join(', ')}.` : '';
+  const stylePart = groups.style.length > 0 ? ` Render the overall artwork in the exact style of: ${groups.style.join(', ')}.` : '';
+  const effectsPart = groups.effects.length > 0 ? ` Apply these camera lens and rendering post-processing effects: ${groups.effects.join(', ')}.` : '';
+  const detailsPart = groups.detail.length > 0 ? ` Enforce strict compliance with these fine details: ${groups.detail.join(', ')}.` : '';
+  
+  return `${mainDirective}${lightingPart}${cameraPart}${stylePart}${effectsPart}${detailsPart}`.replace(/\s+/g, ' ');
 }
 
 function offlineDeepThinkingSpec(items, negativeText) {
@@ -1268,43 +1280,38 @@ function offlineDeepThinkingSpec(items, negativeText) {
     }
   });
 
-  const formatList = (arr) => arr.length > 0 ? arr.map(x => `* ${x}`).join('\n') : '* (Not specified)';
+  const formatSublist = (arr, label) => arr.length > 0 ? arr.map(x => `  - ${x}`).join('\n') : `  - ${label} unspecified`;
 
-  return `# VISUAL SPECIFICATION DOCUMENT (PLG OFFLINE COMPILER)
+  return `# STRICT VISUAL DIRECTION BRIEF (PLG OFFLINE COMPILER)
 
-## 1. PRIMARY SUBJECT & DIRECTIVES
-### Core Subjects
-${formatList(groups.subject)}
+## 1. PRIMARY SUBJECT & ACTION COMMANDS
+* **Subject Directives**: You must depict the primary subject as:
+${formatSublist(groups.subject, 'Subject')}
+* **Action Directives**: Enforce these active behaviors:
+${formatSublist(groups.action, 'Action')}
+* **Mood Directives**: Enforce a strict emotional profile of:
+${formatSublist(groups.emotion, 'Mood')}
 
-### Active Behaviors & Actions
-${formatList(groups.action)}
+## 2. COMPOSITION & ENVIRONMENT INSTRUCTIONS
+* **Spatial Setting**: Place the scene strictly within this environment:
+${formatSublist(groups.environment, 'Environment')}
 
-### Emotional & Atmospheric Profile
-${formatList(groups.emotion)}
-
-## 2. ENVIRONMENT & SPACE
-### Setting Details
-${formatList(groups.environment)}
-
-## 3. LIGHTING & COMPOSITION
-### Lighting Guidelines
-${formatList(groups.lighting)}
-
-### Camera Composition
-${formatList(groups.camera)}
+## 3. CAMERA & LIGHTING CONTROLS
+* **Lighting Conditions**: You must illuminate the scene using:
+${formatSublist(groups.lighting, 'Lighting')}
+* **Camera Perspective**: Capture this scene from the perspective of:
+${formatSublist(groups.camera, 'Camera framing')}
 
 ## 4. STYLE & TECHNICAL ARTISTRY
-### Artistic Style
-${formatList(groups.style)}
+* **Artistic Style**: Render the artwork in the exact style of:
+${formatSublist(groups.style, 'Art style')}
+* **Lens & Render Effects**: Apply these visual post-processing effects:
+${formatSublist(groups.effects, 'Visual effects')}
+* **Fine Details**: Integrate these precise details:
+${formatSublist(groups.detail, 'Details')}
 
-### Lens & Render Effects
-${formatList(groups.effects)}
-
-### Fine-grain Details
-${formatList(groups.detail)}
-
-## 5. NEGATIVE DIRECTIVES
-### Suppressed Concepts
-${items.filter(x => x.text.startsWith('avoid ') || x.text.startsWith('do not ') || x.text.startsWith('without ')).length > 0 ? items.filter(x => x.text.startsWith('avoid ') || x.text.startsWith('do not ') || x.text.startsWith('without ')).map(x => `* **AVOID**: ${x.text.replace(/^(avoid\s+|do\s+not\s+use\s+|without\s+)/i, '')}`).join('\n') : '* None suppressed'}`;
+## 5. MANDATORY SUPPRESSIONS & EXCLUSIONS
+* **Suppressions**: You must absolutely avoid and exclude these concepts:
+${items.filter(x => x.text.startsWith('avoid ') || x.text.startsWith('do not ') || x.text.startsWith('without ')).length > 0 ? items.filter(x => x.text.startsWith('avoid ') || x.text.startsWith('do not ') || x.text.startsWith('without ')).map(x => `  - ${x.text.replace(/^(avoid\s+|do\s+not\s+use\s+|without\s+)/i, '')}`).join('\n') : '  - None suppressed'}`;
 }
 

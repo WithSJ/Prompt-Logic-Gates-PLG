@@ -4,6 +4,14 @@ This is an append-only chronological ledger tracking major engineering steps, re
 
 ---
 
+## [2026-05-30] refine | Redesign Compiled Prompts for Strict Commanding and Directive Output
+- **Action**: Completely overhauled the semantic prompt compilers (both AI and offline modes) to ensure all generated outputs are strictly directive visual briefs or commanding sentences, eliminating passive phrasings, parenthesized technical metadata, and document references.
+- **Details**:
+  - **AI Prompt Architectures Redesigned**: Refactored system prompts for AND (`aiGateAnd`), OR (`aiGateOr`), NOT (`aiGateNot`), Q&A Synthesis (`aiRefineAnswers`), and Memory Alignment (`aiAlignPromptWithMemory`) to speak in a visual director's command voice, strictly banning phrases like "according to memory", "based on fragment A", "merged prompt", or meta-labels.
+  - **Deep & Normal Thinking Prompts Refined**: Modified thinking and deep-thinking mode compiler prompts to strictly command the downstream generator model via active, imperative verbs and structure Premium Markdown briefs without meta-commentary or document references.
+  - **Offline Memory Appends Redesigned**: Dismantled the parenthesized technical metadata formula `(Memory Constraints: [[Term] rule: [Description]])` in both primary and error fallback compilation pathways. Replaced it with a direct, active sentence-injection format: `Enforce [Term]: [Description].` which blends seamlessly into the final prompt.
+  - **Documentation & Wiki Manuals Synced**: Updated the compiler engine spec (`documentation/compiler-engine.md`), workflows handbook (`documentation/workflows-and-tutorials.md`), and memory wiki (`wiki/memory.md`) to reflect the new commanding prompt syntax and expected outputs.
+
 ## [2026-05-30] lint | Reconcile 10-page user manual suite, align wiki hubs, and synchronize with Git
 - **Action**: Updated the entire `documentation/` user manual suite and aligned relative link hubs to reconcile all developer documentation with fuchsia Context Memory nodes and singleCompiledPrompt explicit inline negation architecture.
 - **Details**:
