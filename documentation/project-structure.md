@@ -25,10 +25,10 @@ PLG/
 │   ├── index.css                       # Complete design system (1036 lines)
 │   │
 │   ├── compiler/
-│   │   └── semanticCompiler.js         # Semantic compilation engine (916 lines)
+│   │   └── semanticCompiler.js         # Semantic compilation engine (1320 lines)
 │   │
 │   └── components/
-│       ├── CustomNodes.jsx             # All 11 React Flow node components (705 lines)
+│       ├── CustomNodes.jsx             # All 12 React Flow node components (869 lines)
 │       ├── PLGCanvas.jsx               # React Flow canvas wrapper (203 lines)
 │       ├── Inspector.jsx               # Right panel pipeline debugger (177 lines)
 │       └── SettingsModal.jsx           # AI provider configuration modal (238 lines)
@@ -38,6 +38,7 @@ PLG/
 │   ├── log.md                          # Chronological project log
 │   ├── overview.md                     # Project vision and concepts
 │   ├── architecture.md                 # Technical architecture deep-dive
+│   ├── memory.md                       # Context Memory reference specification
 │   ├── nodes.md                        # Node reference (wiki version)
 │   ├── compiler.md                     # Compiler rules reference (wiki version)
 │   └── workflows.md                    # Workflow guides (wiki version)
@@ -49,7 +50,7 @@ PLG/
 │   ├── nodes-guide.md                 # Complete node reference
 │   ├── compiler-engine.md             # Compiler technical reference
 │   ├── ui-reference.md                # UI element documentation
-│   ├── workflows-and-tutorials.md     # Step-by-step tutorials
+│   ├── workflows-and-tutorials.md     # Step-by-Step Tutorials
 │   ├── api-and-ai-integration.md      # AI provider configuration
 │   ├── project-structure.md           # This file
 │   └── design-system.md              # CSS tokens and styling
@@ -158,23 +159,24 @@ Internal (non-exported) functions:
 
 ### Components (`src/components/`)
 
-#### [CustomNodes.jsx](file:///c:/Users/jadam/Desktop/PLG/src/components/CustomNodes.jsx) (705 lines)
-Defines all 11 custom React Flow node components:
+#### [CustomNodes.jsx](file:///c:/Users/jadam/Desktop/PLG/src/components/CustomNodes.jsx) (869 lines)
+Defines all 12 custom React Flow node components:
 
 | Component | Node Type | Lines |
 | :--- | :--- | :--- |
 | `NodeHeader` | (shared header) | 6–27 |
 | `FileNode` | `fileNode` | 30–63 |
 | `PromptBoxNode` | `promptBox` | 66–95 |
-| `ANDNode` | `and` | 98–149 |
-| `ORNode` | `or` | 152–203 |
-| `NOTNode` | `not` | 206–249 |
-| `FileViewerNode` | `fileViewer` | 252–334 |
-| `FileToPromptNode` | `fileToPrompt` | 337–373 |
-| `AskQuestionNode` | `askQuestion` | 376–471 |
-| `AnswerQuestionsNode` | `answerQuestions` | 474–561 |
-| `PromptConcatNode` | `promptConcat` | 564–650 |
-| `PromptToFileNode` | `promptToFile` | 653–689 |
+| `ANDNode` | `and` | 98–157 |
+| `ORNode` | `or` | 160–219 |
+| `NOTNode` | `not` | 222–273 |
+| `FileViewerNode` | `fileViewer` | 276–335 |
+| `FileToPromptNode` | `fileToPrompt` | 338–374 |
+| `AskQuestionNode` | `askQuestion` | 377–472 |
+| `AnswerQuestionsNode` | `answerQuestions` | 475–570 |
+| `PromptConcatNode` | `promptConcat` | 573–659 |
+| `PromptToFileNode` | `promptToFile` | 662–698 |
+| `ContextMemoryNode` | `contextMemory` | 701–866 |
 
 All components are wrapped in `React.memo()` for performance. The `nodeTypes` registry object maps type strings to components.
 
@@ -189,8 +191,8 @@ The React Flow canvas wrapper. Handles:
 
 #### [Inspector.jsx](file:///c:/Users/jadam/Desktop/PLG/src/components/Inspector.jsx) (177 lines)
 The right panel compilation output display. Features:
-- Positive/negative prompt display with copy buttons
-- Expandable pipeline stage debugger
+- Compiled prompt display with copy button
+- Expandable pipeline stage debugger (with Context Memory verification checks)
 - Compilation breakdown table with category badges
 - Export .txt and Clear All buttons
 - Category color mapping for breakdown badges

@@ -12,13 +12,14 @@ This is the definitive guide to every node type in PLG. Each section covers: wha
 
 ## Handle Color Legend
 
-Before diving into nodes, understand the three handle types:
+Before diving into nodes, understand the four handle types:
 
 | Handle Color | CSS Class | Data Type | Description |
 | :--- | :--- | :--- | :--- |
-| 🟡 **Amber/Gold** | `.file` | File Baseline `{positive, negative}` | Carries the evolving prompt state |
+| 🟡 **Amber/Gold** | `.file` | File Baseline | Carries the compiled prompt baseline stream |
 | 🔵 **Cyan** | `.prompt` | Raw text string | A single prompt fragment |
 | 🟠 **Orange** | `.questions` | String array | Clarifying questions list |
+| 🟣 **Fuchsia/Purple** | `.memory` | Context Memory | Carries the Visual Context Memory ledger |
 
 **Rule**: Only matching colors can connect. Each input accepts exactly one connection.
 
@@ -33,7 +34,7 @@ Before diving into nodes, understand the three handle types:
 **Palette Icon**: `.txt`
 
 ### What It Does
-Initializes the file baseline stream with empty positive and negative strings. Think of it as the blank canvas that downstream gates write to.
+Initializes the file baseline stream with an empty Compiled Prompt. Think of it as the blank canvas that downstream gates write to.
 
 ### Fields
 | Field | Type | Default | Description |
@@ -173,24 +174,25 @@ Candidate B: "PS1 retro graphics, low-poly textures"
 
 ## 5. NOT Gate
 
-> Suppresses a concept. Routes it to the negative prompt.
+> Suppresses a concept. Appends explicit negation clauses directly to the Compiled Prompt.
 
 **Type ID**: `not`  
 **Category**: Logic Gate  
 **Palette Icon**: `¬`
 
 ### What It Does
-Takes a concept to forbid, removes any trace of it from the positive prompt, and adds it to the negative prompt.
+Takes the current file baseline and a concept to suppress (A). It strips any trace of that concept from the Compiled Prompt baseline and appends explicit negation instructions (e.g. `avoid [concept]`) directly to the single compiled prompt stream.
 
-- **Rule mode**: Scans the positive prompt array, removes any term containing the suppressed concept, appends the concept to the negative array
-- **AI mode**: Sends baseline + concept to the AI, which sanitizes the positive prompt and suggests additional negative terms
+- **Rule mode**: Scans the positive prompt array, removes any term containing the suppressed concept, and appends `avoid [concept]` to the baseline.
+- **AI mode**: Sends baseline + concept to the AI, which sanitizes the positive baseline and writes natural-sounding negative directives (e.g. "avoiding", "do not use") inside the compiled prompt block itself.
 
 ### Handles
 | Side | Handle ID | Type | Description |
 | :--- | :--- | :--- | :--- |
 | Left | `file` | Target (Amber) | Input baseline stream |
 | Left | `a` | Target (Cyan) | Concept to suppress |
-| Right | `file` | Source (Amber) | Sanitized baseline (negative updated) |
+| Left | `memory` | Target (Purple) | Input Context Memory connection |
+| Right | `file` | Source (Amber) | Sanitized baseline with negation |
 
 ### Usage Example
 ```
@@ -198,12 +200,11 @@ Baseline positive: "dark hospital, cute cartoon style, fog"
 Suppress: "cute cartoon style"
 
 → NOT Gate output:
-    Positive: "dark hospital, fog"
-    Negative: "cute cartoon style"
+    Compiled Prompt: "dark hospital, fog (avoid cute cartoon style)"
 ```
 
 ### AI Mode Bonus
-In AI mode, the NOT gate doesn't just remove the literal text — it analyzes semantic relationships. If you suppress "cute", the AI might also add "kawaii", "chibi", "adorable" to the negative prompt.
+In AI mode, the NOT gate doesn't just strip literal text — it analyzes semantic relationships. If you suppress "cute", the AI might rephrase the baseline to sound mature and moody, while embedding strict instructions to avoid cute, childish, or colorful cartoon elements.
 
 ---
 
@@ -365,14 +366,14 @@ Use this when you want to start a fresh file pipeline from a prompt fragment —
 
 ## 11. Prompt File Viewer
 
-> Real-time monitor showing the compiled positive and negative prompts.
+> Real-time monitor showing the fully Compiled Prompt.
 
 **Type ID**: `fileViewer`  
 **Category**: Output Monitor  
 **Palette Icon**: `👁`
 
 ### What It Does
-Displays the current compiled state of the file baseline flowing into it. Shows both the positive prompt and the negative prompt in read-only text boxes.
+Displays the current compiled state of the file baseline flowing into it. Shows the Compiled Prompt in an enlarged, premium, read-only text box.
 
 ### Handles
 | Side | Handle ID | Type | Description |
@@ -394,3 +395,44 @@ If you try to add a second one, you'll get an error toast. This constraint preve
 
 ### Cannot Be Deleted
 The File Viewer node's delete button is intentionally disabled. You can move it and disconnect it, but you cannot remove it from the workspace. If you clear the canvas, the File Viewer is preserved.
+
+---
+
+## 12. Context Memory
+
+> Synces codebase files, APIs, and guidelines to guarantee strict case-sensitive variable alignment.
+
+**Type ID**: `contextMemory`  
+**Category**: Data & Memory  
+**Palette Icon**: `🧠`
+
+### What It Does
+Acts as a client-side visual memory bank. You can drag and drop code files, API schemas, design guidelines, or wikis (`.md`, `.txt`, `.html`, `.json`, `.xml`) directly into the node. 
+
+- **Offline Rule Mode**: Runs an offline multi-casing parser on file buffers, automatically extracting camelCase, PascalCase, snake_case, and CONSTANT_CASE variables, alongside function signatures and lexical rule statements (triggered by `must`, `should`, `always`, `never`, `avoid`).
+- **AI Assisted Mode**: Feeds loaded buffers into a zero-shot indexing prompt to build a structured MemPalace-style workspace ledger with Obsidian-friendly headers (Wings, Rooms, and Halls).
+
+During graph compilation, any matching baseline keywords are automatically updated to match the exact, case-sensitive casing defined in the memory ledger, preventing spelling mismatches in downstream prompt pipelines.
+
+### Handles
+| Side | Handle ID | Type | Description |
+| :--- | :--- | :--- | :--- |
+| Left | `file` | Target (Amber) | Input file baseline stream |
+| Right | `memory` | Source (Purple) | Outputs the visual memory catalog stream |
+
+### Usage Example
+Connect the `memory` source pin of the Context Memory node to any logic gate's target `memory` handle:
+```
+[File Node] ──file──▶ [AND Gate] ──file──▶ [Prompt File Viewer]
+                         ▲
+[Context Memory] ──mem───┘
+```
+This forces the AND Gate's compile phase to check its output against the Context Memory bank.
+
+### Fields
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `Upload Area` | Click/Drop | (empty) | Accepts `.md, .txt, .html, .json, .xml` |
+| `Files List` | Display | (empty) | Displays loaded files with file sizes and delete options |
+| `Build Button` | Button | (interactive) | Trigger lexical or AI extraction engine |
+| `Memory Preview` | Textarea | (empty) | Interactive preview of the compiled Markdown ledger |

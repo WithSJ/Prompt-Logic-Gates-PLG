@@ -1,6 +1,6 @@
 ---
 category: wiki-concept
-updated: 2026-05-29
+updated: 2026-05-30
 tags: [plg, compiler, prompts, engineering]
 ---
 
@@ -92,11 +92,11 @@ When in **AI Mode**, the compiler bypasses offline rules and triggers direct pro
 ### C. NOT Gate (Negation Routing)
 *   **System Prompt**:
     ```text
-    You are the AI compiler for a "NOT Gate" inside a visual prompt-building IDE. Your job is to read the current positive prompt baseline and a concept to suppress (A). You must: (1) strip any trace or reference of A from the positive prompt if it exists, (2) recommend negative prompt exclusions to keep A suppressed. Respond with STRICT JSON in this format: {"updated_positive": "The sanitized positive prompt", "negative_additions": ["list", "of", "negative", "terms"]}
+    You are the AI compiler for a "NOT Gate" inside a visual prompt-building IDE. Your job is to read the current prompt baseline and a concept to suppress (A). You must: (1) strip any positive trace or reference of A from the prompt if it exists, (2) append a natural clause or instruction explicitly stating not to do, use, or include A and related concepts (e.g. "avoid A", "without A", "do not include A"). Respond with STRICT JSON in this format: {"updated_positive": "The sanitized prompt with explicit negation instructions built-in"}
     ```
 *   **User Input**:
     ```text
-    Baseline Positive Prompt:
+    Baseline Prompt:
     "{baselinePos}"
 
     Concept to Suppress (NOT A): "{A}"
@@ -175,11 +175,11 @@ The semantic compiler supports three distinct compilation depth settings (Normal
     - **Art Medium**: [Style description, artistic emulations]
     - **Effects & Grading**: [Grain, lens effects, particles, post-processing]
     
-    ## 5. NEGATIVE INHIBITIONS
-    - **Explicitly Suppress**: [Instruct to avoid these negative concepts: {activeNegative}]
+    ## 5. NEGATIVE DIRECTIVES
+    - **Explicitly Suppress**: [Instruct to avoid these negative/suppressed concepts]
     
     Integrate all raw prompt elements naturally. Do not include meta-commentary or preambles. Output ONLY the beautifully structured Markdown specifications block.
     ```
 *   **Offline/Rule-Based Fallback**:
-    Outputs a premium visual specifications document in Markdown structure, complete with bulleted category lists for all connected visual nodes, and a dedicated negative exclusions section.
+    Outputs a premium visual specifications document in Markdown structure, complete with bulleted category lists for all connected visual nodes, and a dedicated negative directives section.
 

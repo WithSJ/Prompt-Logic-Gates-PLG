@@ -4,6 +4,44 @@ This is an append-only chronological ledger tracking major engineering steps, re
 
 ---
 
+## [2026-05-30] lint | Reconcile 10-page user manual suite, align wiki hubs, and synchronize with Git
+- **Action**: Updated the entire `documentation/` user manual suite and aligned relative link hubs to reconcile all developer documentation with fuchsia Context Memory nodes and singleCompiledPrompt explicit inline negation architecture.
+- **Details**:
+  - **10-Page Manual Suite Synced**: Overwrote README, Getting Started, How It Works, Nodes Guide, Compiler Engine, UI Reference, Workflows, Project Structure, and Design System.
+  - **Context Memory API Documented**: Detailed handles (`.memory`), drag-and-drop file uploaders, lexical casing swappers, zero-shot AI catalogers, and the parenthesized rule constraint injection formula.
+  - **Unified Compiled Prompt Specs**: Completely excised obsolete references to a separate positive/negative dual-pipeline; updated all tutorials and UI references to feature a single Compiled Prompt showing inline negation constraints.
+  - **Star-Graph Links Integrated**: Added relative connection grids at the end of `wiki/overview.md` to form a perfect Obsidian star-graph representation.
+
+
+## [2026-05-30] refine | Upgrade Visual Context Memory system to MemPalace-style ledger & complete prompt expansion
+- **Action**: Upgraded the Visual Context Memory system to model a high-fidelity indexing catalog (styled after MemPalace) and enabled complete prompt design/expansion based on matching memory specifications.
+- **Details**:
+  - **Memory Indexer Upgraded**: Upgraded `onExtractMemory` in [App.jsx](../src/App.jsx) to index files into a rigorous HSL-friendly hierarchy containing Wings, Rooms, and Halls.
+  - **Offline Lexical Crawler**: Implemented an advanced line-by-line regex crawler that parses JSON keys, multi-casing variables (camelCase, PascalCase, snake_case, CONSTANT_CASE), function signatures, and semantic guidelines (using `must`, `should`, `always`, `never`, `avoid` regex matching) to construct detailed visual entity hints and constraints.
+  - **AI Prompt Indexer Redesigned**: Redesigned the AI system extractor instructions to output Obsidian-friendly workspace hierarchy logs, variable definition tables, and semantic visual constraints.
+  - **Complete Prompt Design & Expansion**: Upgraded the Context Memory compiler gate (`aiAlignPromptWithMemory` and offline fallbacks in [semanticCompiler.js](../src/compiler/semanticCompiler.js)) to intercept high-level prompt keywords or references, automatically expanding them into detailed specifications utilizing exact case-sensitive nomenclature.
+  - **Offline Semantic Rules Injection**: Implemented automatic extraction of memory rule statements which are appended directly as formatted parenthesized constraints on rule-based compiler cycles when terms are matched.
+  - **Wiki Verification Guide**: Overwrote [Context Memory Reference Specifications](memory.md) to document the Wings/Rooms/Halls workspace structure, expansion engines, and validation card.
+
+## [2026-05-30] design | Implement Context Memory Node & Strict Variable Alignment
+- **Action**: Conceived and built the **Context Memory Node** which reads codebase files, wikis, html, and json, indexing variables/functions into structured Markdown to enforce exact casing alignment during prompt compilation.
+- **Details**:
+  - **Memory Node Creation**: Implemented `ContextMemoryNode` in [CustomNodes.jsx](../src/components/CustomNodes.jsx) utilizing a fuchsia-purple theme (`var(--memory)`). Equipped node with client-side text file loaders, files lists, a text editor preview, and a target `file` pin + source `memory` pin.
+  - **Topological Sorting Updated**: Upgraded topological sorter (`buildExecutionOrder` in [semanticCompiler.js](../src/compiler/semanticCompiler.js)) to resolve memory dependencies upstream, ensuring file baselines are fully generated before memory indexes them.
+  - **Visual Handles & Routing**: Added purple target memory handles to AND, OR, NOT, and Provide Answers nodes in [CustomNodes.jsx](../src/components/CustomNodes.jsx) with custom validation and purple visual connections (`#c084fc`) in [PLGCanvas.jsx](../src/components/PLGCanvas.jsx).
+  - **Compiler Alignment**: Upgraded prompt generators in [semanticCompiler.js](../src/compiler/semanticCompiler.js) to swallow memory variables/functions and feed them as strict system constraints to the AI, ensuring exact naming matches.
+  - **Offline Memory Verification**: Formulated an offline regex matching validator within `compileGraph` that scans generated prompts for backtick-wrapped memory keywords and outputs exact validation reports in the Pipeline Debugger stages.
+  - **Documentation Suite**: Added Obsidian-friendly [Context Memory specifications](memory.md) and linked it in [index.md](index.md).
+
+## [2026-05-30] refine | Update NOT Gate to Explicit Negation & Remove Negative Prompt System
+- **Action**: Converted NOT gate concept suppression to append explicit negation clauses (e.g. `avoid [concept]`) directly to the single Compiled Prompt baseline and fully dismantled the separate Negative Prompt system.
+- **Details**:
+  - **Core Compiler Refactoring**: Updated [semanticCompiler.js](../src/compiler/semanticCompiler.js) to strip positive references to `A` and append `avoid A` in rule-based mode, and modified `aiGateNot` instructions to ask the LLM to write natural clauses (like "do not use", "avoid") in one prompt.
+  - **UI/UX Cleanup**: Completely removed Section 2 ("Negative Prompt") and its copy button from [Inspector.jsx](../src/components/Inspector.jsx) and the `PLG-IDE.html` right sidebar. Renamed "Positive Prompt" to "Compiled Prompt".
+  - **Custom Nodes Refined**: Updated `FileViewerNode` in [CustomNodes.jsx](../src/components/CustomNodes.jsx) to hide the Negative Prompt box and expanded the main Compiled Prompt text area for a premium visual aesthetic. Updated `NOTNode` description.
+  - **Export System**: Synchronized [App.jsx](../src/App.jsx) and `PLG-IDE.html` plain text exporters to output a clean, single prompt under a `# Compiled Prompt` header.
+  - **Compiling Wiki Guides**: Updated all Obsidian-compatible guides including Overview, Architecture, Nodes Reference, Compiler Specifications, and Workflows to strictly detail explicit negation routing instead of negative memory.
+
 ## [2026-05-29] design | Multi-Depth Prompt Compilation Modes Implemented
 - **Action**: Added 3 prompt compilation depth options (Normal, Thinking, DeepThinking) to the visual IDE's Inspector panel and Semantic Compiler.
 - **Details**:

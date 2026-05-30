@@ -79,7 +79,7 @@ export function contextScore(text, contextText) {
 
 // Builds the topological execution order based on file and prompt-converter dependencies
 export function buildExecutionOrder(nodes, edges) {
-  const gates = nodes.filter(n => ['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptConcat', 'promptToFile'].includes(n.type));
+  const gates = nodes.filter(n => ['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptConcat', 'promptToFile', 'contextMemory'].includes(n.type));
   
   // Recursive function to trace upstream gate ID from any node ID along file lines
   const traceUpstreamGate = (nodeId) => {
@@ -87,7 +87,7 @@ export function buildExecutionOrder(nodes, edges) {
     if (!e) return null;
     const src = nodes.find(n => n.id === e.source);
     if (!src) return null;
-    if (['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptConcat', 'promptToFile'].includes(src.type)) return src.id;
+    if (['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptConcat', 'promptToFile', 'contextMemory'].includes(src.type)) return src.id;
     if (['fileViewer', 'fileToPrompt'].includes(src.type)) {
       return traceUpstreamGate(src.id);
     }
@@ -133,6 +133,16 @@ export function buildExecutionOrder(nodes, edges) {
       }
     }
 
+    // Dependency 5: memory input on any gate connected to Context Memory
+    const mEdge = edges.find(x => x.target === g.id && x.targetHandle === 'memory');
+    if (mEdge) {
+      const src = nodes.find(n => n.id === mEdge.source);
+      if (src && src.type === 'contextMemory') {
+        const fileGate = traceUpstreamGate(src.id);
+        if (fileGate) deps.add(fileGate);
+      }
+    }
+
     dependencies[g.id] = Array.from(deps);
   });
 
@@ -173,7 +183,7 @@ export function getFileInput(nodes, edges, gateId, gateStates) {
     return { positive: '', negative: '' };
   }
   
-  if (['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptToFile', 'promptConcat'].includes(sourceNode.type)) {
+  if (['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptToFile', 'promptConcat', 'contextMemory'].includes(sourceNode.type)) {
     return gateStates[sourceNode.id] || { positive: '', negative: '' };
   }
   
@@ -182,6 +192,22 @@ export function getFileInput(nodes, edges, gateId, gateStates) {
   }
   
   return { positive: '', negative: '' };
+}
+
+// Traces and retrieves memory content connected to a gate, or falls back to canvas-wide memory node
+export function getMemoryInput(nodes, edges, gateId) {
+  // Check if there is a direct edge connected to the gate's 'memory' handle
+  const edge = edges.find(e => e.target === gateId && e.targetHandle === 'memory');
+  if (edge) {
+    const sourceNode = nodes.find(sn => sn.id === edge.source);
+    if (sourceNode && sourceNode.type === 'contextMemory') {
+      return sourceNode.data?.extractedMemory || '';
+    }
+  }
+  
+  // Global fallback: find first contextMemory node on the canvas
+  const globalMemoryNode = nodes.find(n => n.type === 'contextMemory');
+  return globalMemoryNode?.data?.extractedMemory || '';
 }
 
 // Retrieve prompt text from input pin recursively resolving converters
@@ -344,16 +370,26 @@ function extractJson(s) {
 // ------------------------------------------------------------
 
 // 1. AI Conjunction (AND) Gate execution
-async function aiGateAnd(baselinePos, A, B, settings) {
-  const system = `You are the AI compiler for an "AND Gate" inside a visual prompt-building IDE. Your job is to take the current positive prompt baseline and merge it with two new prompt fragments (A and B). You must merge them into a single, cohesive positive prompt: (1) rank foundational elements (subjects, environments) first, style/modifiers later; (2) remove duplicates or highly redundant statements; (3) maintain proper flow. Respond with ONLY the optimized, merged positive prompt text, no markdown, no quotes, no extra commentary.`;
+async function aiGateAnd(baselinePos, A, B, settings, memoryContent) {
+  let system = `You are the AI compiler for an "AND Gate" inside a visual prompt-building IDE. Your job is to take the current positive prompt baseline and merge it with two new prompt fragments (A and B). You must merge them into a single, cohesive positive prompt: (1) rank foundational elements (subjects, environments) first, style/modifiers later; (2) remove duplicates or highly redundant statements; (3) maintain proper flow. Respond with ONLY the optimized, merged positive prompt text, no markdown, no quotes, no extra commentary.`;
+  
+  if (memoryContent) {
+    system += `\n\nCRITICAL CONSTRAINT: You MUST align the compiled prompt with the following Context Memory of terms, variables, functions, and rules. Use exact terms, spelling, and casing as described in the memory:\n${memoryContent}`;
+  }
+
   const user = `Baseline Positive Prompt So Far:\n"${baselinePos || '(empty)'}"\n\nNew Fragment A: "${A || '(none)'}"\nNew Fragment B: "${B || '(none)'}"\n\nReturn the merged prompt:`;
   const raw = await callAI(system, user, settings);
   return (raw || '').trim();
 }
 
 // 2. AI Context Selector (OR) Gate execution
-async function aiGateOr(baselinePos, A, B, settings) {
-  const system = `You are the AI compiler for an "OR Gate" inside a visual prompt-building IDE. Your job is to read the current positive prompt context and evaluate two competing candidate prompt fragments (A and B). You must select the SINGLE best candidate that is most semantically compatible with the current context, explain your choice in one sentence, and output the updated positive prompt. Respond with STRICT JSON in this format: {"selected": "A" or "B", "reason": "Your brief explanation", "updated_prompt": "The consolidated prompt including the chosen candidate"}`;
+async function aiGateOr(baselinePos, A, B, settings, memoryContent) {
+  let system = `You are the AI compiler for an "OR Gate" inside a visual prompt-building IDE. Your job is to read the current positive prompt context and evaluate two competing candidate prompt fragments (A and B). You must select the SINGLE best candidate that is most semantically compatible with the current context, explain your choice in one sentence, and output the updated positive prompt. Respond with STRICT JSON in this format: {"selected": "A" or "B", "reason": "Your brief explanation", "updated_prompt": "The consolidated prompt including the chosen candidate"}`;
+  
+  if (memoryContent) {
+    system += `\n\nCRITICAL CONSTRAINT: Evaluate the context matching and select the candidate strictly aligned with the following Context Memory rules and vocabulary:\n${memoryContent}`;
+  }
+
   const user = `Baseline Positive Prompt Context So Far:\n"${baselinePos || '(empty)'}"\n\nCandidate Prompt A: "${A || '(none)'}"\nCandidate Prompt B: "${B || '(none)'}"\n\nReturn JSON:`;
   const raw = await callAI(system, user, settings);
   const json = extractJson(raw);
@@ -361,10 +397,15 @@ async function aiGateOr(baselinePos, A, B, settings) {
   return json;
 }
 
-// 3. AI Negative Control (NOT) Gate execution
-async function aiGateNot(baselinePos, A, settings) {
-  const system = `You are the AI compiler for a "NOT Gate" inside a visual prompt-building IDE. Your job is to read the current positive prompt baseline and a concept to suppress (A). You must: (1) strip any trace or reference of A from the positive prompt if it exists, (2) recommend negative prompt exclusions to keep A suppressed. Respond with STRICT JSON in this format: {"updated_positive": "The sanitized positive prompt", "negative_additions": ["list", "of", "negative", "terms"]}`;
-  const user = `Baseline Positive Prompt:\n"${baselinePos || '(empty)'}"\n\nConcept to Suppress (NOT A): "${A || '(none)'}"\n\nReturn JSON:`;
+// 3. AI Negation Routing (NOT) Gate execution
+async function aiGateNot(baselinePos, A, settings, memoryContent) {
+  let system = `You are the AI compiler for a "NOT Gate" inside a visual prompt-building IDE. Your job is to read the current prompt baseline and a concept to suppress (A). You must: (1) strip any positive trace or reference of A from the prompt if it exists, (2) append a natural clause or instruction explicitly stating not to do, use, or include A and related concepts (e.g. "avoid A", "without A", "do not include A"). Respond with STRICT JSON in this format: {"updated_positive": "The sanitized prompt with explicit negation instructions built-in"}`;
+  
+  if (memoryContent) {
+    system += `\n\nCRITICAL CONSTRAINT: Ensure no exact variables or terms from the Context Memory are altered unless explicitly negated, and maintain strict consistency with it:\n${memoryContent}`;
+  }
+
+  const user = `Baseline Prompt:\n"${baselinePos || '(empty)'}"\n\nConcept to Suppress (NOT A): "${A || '(none)'}"\n\nReturn JSON:`;
   const raw = await callAI(system, user, settings);
   const json = extractJson(raw);
   if (!json || !json.updated_positive) throw new Error('Bad NOT Gate AI JSON structure');
@@ -403,10 +444,14 @@ function offlineMockQuestions(excludedQs, count) {
 }
 
 // AI Clarification Questions generator
-async function aiAskQuestions(baselinePos, excludedQs, count, settings) {
+async function aiAskQuestions(baselinePos, excludedQs, count, settings, memoryContent) {
   let system = `You are an expert AI prompt engineer. Your job is to analyze the positive prompt compiled so far, identify any gaps, ambiguities, or unclear stylistic directions, and generate a list of exactly ${count} crucial clarifying questions that the user should answer to make the prompt perfect.
 If the prompt is empty or very short, ask foundational questions about what the user wants to create.
 You must respond with STRICT JSON containing a list of strings: {"questions": ["Clarifying question 1", ..., "Clarifying question ${count}"]}. No commentary, no markdown.`;
+
+  if (memoryContent) {
+    system += `\n\nReview the following Context Memory to understand what technical terms, variables, and rules are already defined before formulating questions. Do not ask questions about details already specified in the memory:\n${memoryContent}`;
+  }
 
   if (excludedQs && excludedQs.length > 0) {
     system += `\n\nCRITICAL CONSTRAINT: You MUST NOT ask any questions that are semantically identical or highly similar to the following questions which have ALREADY been asked:\n${excludedQs.map((q, i) => `- ${q}`).join('\n')}\nGenerate ${count} entirely NEW and different questions.`;
@@ -420,13 +465,17 @@ You must respond with STRICT JSON containing a list of strings: {"questions": ["
 }
 
 // AI Refinement of prompt based on questions and answers
-async function aiRefineAnswers(baselinePos, questions, answers, settings) {
-  const system = `You are an expert AI prompt engineer. Your job is to take a baseline positive prompt, a list of clarifying questions, and the user's typed answers, and synthesize them into a single, cohesive, highly optimized positive prompt.
+async function aiRefineAnswers(baselinePos, questions, answers, settings, memoryContent) {
+  let system = `You are an expert AI prompt engineer. Your job is to take a baseline positive prompt, a list of clarifying questions, and the user's typed answers, and synthesize them into a single, cohesive, highly optimized positive prompt.
 You must:
 1. Merge the answers naturally and seamlessly into the flow of the baseline prompt.
 2. Maintain proper structure (foundational details first, modifier elements later).
 3. Do NOT include the questions or literal "Clarification on Q..." strings. Just output the refined, integrated prompt text.
 4. Keep the output extremely clean. Respond with ONLY the optimized, merged positive prompt text. No markdown, no quotes, no extra commentary.`;
+
+  if (memoryContent) {
+    system += `\n\nCRITICAL CONSTRAINT: Align the refined prompt exactly with the terms, variables, and syntax specified in the Context Memory:\n${memoryContent}`;
+  }
 
   const qas = [];
   questions.forEach((q, idx) => {
@@ -437,6 +486,24 @@ You must:
   });
 
   const user = `Baseline Positive Prompt:\n"${baselinePos || '(empty)'}"\n\nUser Answers to Clarifications:\n${qas.join('\n\n')}\n\nReturn the refined, integrated positive prompt:`;
+  const raw = await callAI(system, user, settings);
+  return (raw || '').trim();
+}
+
+// AI Context Memory alignment compiler
+async function aiAlignPromptWithMemory(incomingPrompt, memoryContent, settings) {
+  const system = `You are a principal prompt alignment compiler inside a visual prompt-building IDE.
+Your task is to take an incoming prompt baseline, and rewrite and design it to strictly align with the provided Context Memory (which contains exact files, hierarchies, variables, schemas, and style rules).
+
+If the incoming prompt contains any reference, abbreviation, or keyword that matches an entry, variable, function name, or file section in the Context Memory (even a loose or case-insensitive match):
+1. You MUST fully expand and design the prompt in rich detail according to the complete specifications, guidelines, syntax, and rules of that memory catalog entry.
+2. If the user refers to a concept at a high level (e.g. "mempalace recovery" or "agents logic"), pull in the actual structure, variables (like "dimensionality"), function signatures, and constraints from the corresponding wing/room/hall of the Context Memory to compose a complete, highly detailed prompt reflecting the actual structure and constraints.
+3. Strictly employ the exact case-sensitive variables, function names, and file rules from the memory ledger. Do not translate or modify them.
+4. Ensure all baseline concepts are preserved, but completely designed and contextualized according to the memory ledger.
+
+Respond with ONLY the optimized, fully-designed positive prompt text, with no markdown, no quotes, and no conversational preambles.`;
+
+  const user = `Incoming Prompt Baseline:\n"${incomingPrompt || '(empty)'}"\n\nContext Memory:\n${memoryContent}\n\nReturn the aligned prompt:`;
   const raw = await callAI(system, user, settings);
   return (raw || '').trim();
 }
@@ -456,13 +523,13 @@ export async function compileGraph(nodes, edges, settings) {
   let activeNegative = '';
 
   const fileNode = nodes.find(n => n.type === 'fileNode');
-  const gates = nodes.filter(n => ['and', 'or', 'not', 'askQuestion', 'answerQuestions'].includes(n.type));
+  const gates = nodes.filter(n => ['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'contextMemory'].includes(n.type));
 
   if (!fileNode) {
     throw new Error('Missing File Node: Please add a File Node as the single source of truth.');
   }
   if (!gates.length) {
-    throw new Error('No logic nodes added: Please add at least one logic node (AND, OR, NOT, Ask Questions, or Provide Answers) to execute prompt logic.');
+    throw new Error('No logic nodes added: Please add at least one logic node (AND, OR, NOT, Ask Questions, Provide Answers, or Context Memory) to execute prompt logic.');
   }
 
   // 1. Stage 0: Initial Memory Read from source
@@ -494,6 +561,9 @@ export async function compileGraph(nodes, edges, settings) {
     activePositive = fileInput.positive;
     activeNegative = fileInput.negative;
 
+    // Retrieve localized/global context memory to inject into active logic prompts
+    const memoryInput = getMemoryInput(nodes, edges, gid);
+
     // Special fallback for AnswerQuestions if file input is not connected but questions pin is
     if (g.type === 'answerQuestions' && !edges.some(e => e.target === gid && e.targetHandle === 'file')) {
       const qEdge = edges.find(e => e.target === gid && e.targetHandle === 'questions');
@@ -516,7 +586,7 @@ export async function compileGraph(nodes, edges, settings) {
 
         if (settings.mode === 'ai') {
           // Trigger AND Gate AI
-          const merged = await aiGateAnd(activePositive, A, B, settings);
+          const merged = await aiGateAnd(activePositive, A, B, settings, memoryInput);
           activePositive = merged;
           traceDesc = `[AI Active Conjunction]\nBaseline: "${activePositive}"\nMerged input A: "${A || 'none'}" + B: "${B || 'none'}"\nResulting Positive Prompt:\n"${activePositive}"`;
           statusType = 'ai';
@@ -542,7 +612,7 @@ export async function compileGraph(nodes, edges, settings) {
         if (cands.length) {
           if (settings.mode === 'ai') {
             // Trigger OR Gate AI Context selection
-            const json = await aiGateOr(activePositive, A, B, settings);
+            const json = await aiGateOr(activePositive, A, B, settings, memoryInput);
             activePositive = json.updated_prompt;
             items.push({ 
               text: json.selected === 'A' ? A : B, 
@@ -582,18 +652,20 @@ export async function compileGraph(nodes, edges, settings) {
         if (A) {
           if (settings.mode === 'ai') {
             // Trigger NOT Gate AI Negation routing
-            const json = await aiGateNot(activePositive, A, settings);
+            const json = await aiGateNot(activePositive, A, settings, memoryInput);
             activePositive = json.updated_positive;
             
-            // Add negative items
-            json.negative_additions.forEach(term => {
-              if (term && !neg.find(n => n.text === term)) {
-                neg.push({ text: term, by: `NOT AI (${g.id.slice(-4)})` });
-              }
-            });
+            // Mark matching upstream items as dropped for traceability
+            const idxToDrop = items.findIndex(item => hasTerm(item.text, A));
+            if (idxToDrop >= 0) {
+              items[idxToDrop]._drop = `Suppressed by NOT Gate (AI)`;
+            }
             
-            activeNegative = neg.map(x => x.text).join(', ');
-            traceDesc = `[AI Negation routing]\nSuppressed concept: "${A}"\nPositive Sanitized: "${activePositive}"\nNegative recommended: [${json.negative_additions.join(', ')}]\nResulting Negative Prompt:\n"${activeNegative}"`;
+            // We can also extract the newly added negation phrase and push to items for visualization
+            const negatedTerm = `avoid ${A}`;
+            items.push({ text: negatedTerm, ...categorize(negatedTerm), by: `NOT AI (${g.id.slice(-4)})` });
+
+            traceDesc = `[AI Negation routing]\nSuppressed concept: "${A}"\nCompiled Prompt Sanitized & Updated:\n"${activePositive}"`;
             statusType = 'ai';
             statusLabel = 'ai';
           } else {
@@ -601,13 +673,20 @@ export async function compileGraph(nodes, edges, settings) {
             // Strip term if literally present in positive string
             const activeArr = activePositive ? activePositive.split(', ').map(s => s.trim()) : [];
             const sanitized = activeArr.filter(t => !hasTerm(t, A));
+            const negatedTerm = `avoid ${A}`;
+            if (!sanitized.includes(negatedTerm)) {
+              sanitized.push(negatedTerm);
+            }
             activePositive = sanitized.join(', ');
             
-            if (!neg.find(n => n.text === A)) {
-              neg.push({ text: A, by: `NOT (${g.id.slice(-4)})` });
+            // Mark matching upstream items as dropped for traceability
+            const idxToDrop = items.findIndex(item => hasTerm(item.text, A));
+            if (idxToDrop >= 0) {
+              items[idxToDrop]._drop = `Suppressed by NOT Gate`;
             }
-            activeNegative = neg.map(x => x.text).join(', ');
-            traceDesc = `[Rule-based Negation]\nSuppressed concept: "${A}". Concept stripped from positive memory (if found).\nResulting Negative Prompt:\n"${activeNegative}"`;
+            
+            items.push({ text: negatedTerm, ...categorize(negatedTerm), by: `NOT (${g.id.slice(-4)})` });
+            traceDesc = `[Rule-based Negation]\nSuppressed concept: "${A}". Stripped positive references and appended "${negatedTerm}".\nResulting Prompt:\n"${activePositive}"`;
           }
         } else {
           traceDesc = `[NOT Gate skipped: No suppression prompt attached]`;
@@ -639,7 +718,7 @@ export async function compileGraph(nodes, edges, settings) {
           let newQs = [];
           
           if (settings.mode === 'ai') {
-            newQs = await aiAskQuestions(activePositive, [...existingQs, ...excludedQs], diff, settings);
+            newQs = await aiAskQuestions(activePositive, [...existingQs, ...excludedQs], diff, settings, memoryInput);
           } else {
             newQs = offlineMockQuestions([...existingQs, ...excludedQs], diff);
           }
@@ -673,7 +752,7 @@ export async function compileGraph(nodes, edges, settings) {
           });
           
           if (activeArr.length > 0) {
-            combinedVal = await aiRefineAnswers(activePositive, qs, answers, settings);
+            combinedVal = await aiRefineAnswers(activePositive, qs, answers, settings, memoryInput);
             answerPrompt = combinedVal;
           } else {
             combinedVal = activePositive;
@@ -727,6 +806,80 @@ export async function compileGraph(nodes, edges, settings) {
             ? `[Answer Questions Node - AI Mode]\nAI refined the baseline prompt directly:\n"${combinedVal}"`
             : `[Answer Questions Node - Rule Mode]\nAnswers appended to baseline prompt:\n"${combinedVal}"`;
           statusType = settings.mode === 'ai' ? 'ai' : 'info';
+          statusLabel = 'ok';
+        }
+      }
+      // ----------------- CONTEXT MEMORY ALIGNMENT GATE -----------------
+      else if (g.type === 'contextMemory') {
+        const memoryContent = g.data?.extractedMemory || '';
+        
+        if (activePositive && memoryContent) {
+          if (settings.mode === 'ai') {
+            const aligned = await aiAlignPromptWithMemory(activePositive, memoryContent, settings);
+            activePositive = aligned;
+            traceDesc = `[AI Memory Alignment]\nCompletely re-designed and expanded baseline prompt strictly aligning with Context Memory specifications.\nResulting Prompt:\n"${activePositive}"`;
+            statusType = 'ai';
+            statusLabel = 'ai';
+          } else {
+            // Offline matching, casing correction, and rule-based prompt expansion (MemPalace style)
+            const termsMap = new Map();
+            const lines = memoryContent.split(/\r?\n/);
+            lines.forEach(line => {
+              // Matches: - **Term**: Description OR - **`Term`**: Description
+              const match = line.match(/^\s*-\s+\*\*`?([^`*:]+)`?\*\*:\s*(.*)$/i);
+              if (match) {
+                const term = match[1].trim();
+                const desc = match[2].trim();
+                termsMap.set(term, desc);
+              }
+            });
+            
+            let corrected = activePositive;
+            let enrichedAdditions = [];
+            
+            // 1. Enforce exact casing and extract detailed rules for matched terms
+            for (const [term, desc] of termsMap.entries()) {
+              if (term.length > 2) {
+                const escapedTerm = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const regex = new RegExp('\\b' + escapedTerm + '\\b', 'gi');
+                if (regex.test(corrected)) {
+                  // Correct exact casing
+                  corrected = corrected.replace(regex, term);
+                  // Extract rule description
+                  if (desc && desc.length > 5) {
+                    // Check if not already in prompt
+                    if (!corrected.toLowerCase().includes(desc.toLowerCase())) {
+                      enrichedAdditions.push(`${term} rule: ${desc}`);
+                    }
+                  }
+                }
+              }
+            }
+            
+            // 2. Generic case-insensitive search and replace for other generic backtick/bold terms
+            const genericMatches = memoryContent.match(/`([^`]+)`|\*\*([^*]+)\*\*/g) || [];
+            const genericTerms = genericMatches.map(m => m.replace(/[`*]/g, '').trim()).filter(Boolean);
+            genericTerms.forEach(term => {
+              if (term.length > 3) {
+                const escapedTerm = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const regex = new RegExp('\\b' + escapedTerm + '\\b', 'gi');
+                corrected = corrected.replace(regex, term);
+              }
+            });
+            
+            // 3. Append matched memory rules to design the prompt completely according to the memory
+            if (enrichedAdditions.length > 0) {
+              corrected = corrected + ` (Memory Constraints: [${enrichedAdditions.join('; ')}])`;
+            }
+            
+            activePositive = corrected;
+            traceDesc = `[Rule-based Alignment]\nEnforced exact casing and appended ${enrichedAdditions.length} rule constraint(s) from memory.\nResulting Prompt:\n"${activePositive}"`;
+            statusType = 'info';
+            statusLabel = 'ok';
+          }
+        } else {
+          traceDesc = `[Context Memory Node]\nIndex contains ${g.data?.files?.length || 0} files. ` + (activePositive ? 'No compiled memory to align baseline.' : 'No upstream file baseline connected to align.');
+          statusType = 'info';
           statusLabel = 'ok';
         }
       }
@@ -800,9 +953,18 @@ export async function compileGraph(nodes, edges, settings) {
         if (A) {
           const activeArr = activePositive ? activePositive.split(', ').map(s => s.trim()) : [];
           const sanitized = activeArr.filter(t => !hasTerm(t, A));
+          const negatedTerm = `avoid ${A}`;
+          if (!sanitized.includes(negatedTerm)) {
+            sanitized.push(negatedTerm);
+          }
           activePositive = sanitized.join(', ');
-          if (!neg.find(n => n.text === A)) neg.push({ text: A, by: `NOT Fallback` });
-          activeNegative = neg.map(x => x.text).join(', ');
+          
+          // Mark matching upstream items as dropped for traceability
+          const idxToDrop = items.findIndex(item => hasTerm(item.text, A));
+          if (idxToDrop >= 0) {
+            items[idxToDrop]._drop = `Suppressed by NOT Gate (Fallback)`;
+          }
+          items.push({ text: negatedTerm, ...categorize(negatedTerm), by: `NOT (Fallback)` });
         }
       } else if (g.type === 'askQuestion') {
         const qs = [...MOCK_QUESTIONS];
@@ -854,6 +1016,51 @@ export async function compileGraph(nodes, edges, settings) {
         activePositive = promptVal;
         activeNegative = '';
         gateStates[gid] = { ...(gateStates[gid] || {}), positive: activePositive, negative: activeNegative };
+      } else if (g.type === 'contextMemory') {
+        const memoryContent = g.data?.extractedMemory || '';
+        if (activePositive && memoryContent) {
+          const termsMap = new Map();
+          const lines = memoryContent.split(/\r?\n/);
+          lines.forEach(line => {
+            const match = line.match(/^\s*-\s+\*\*`?([^`*:]+)`?\*\*:\s*(.*)$/i);
+            if (match) {
+              const term = match[1].trim();
+              const desc = match[2].trim();
+              termsMap.set(term, desc);
+            }
+          });
+          
+          let corrected = activePositive;
+          let enrichedAdditions = [];
+          
+          for (const [term, desc] of termsMap.entries()) {
+            if (term.length > 2) {
+              const escapedTerm = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+              const regex = new RegExp('\\b' + escapedTerm + '\\b', 'gi');
+              if (regex.test(corrected)) {
+                corrected = corrected.replace(regex, term);
+                if (desc && desc.length > 5 && !corrected.toLowerCase().includes(desc.toLowerCase())) {
+                  enrichedAdditions.push(`${term} rule: ${desc}`);
+                }
+              }
+            }
+          }
+          
+          const genericMatches = memoryContent.match(/`([^`]+)`|\*\*([^*]+)\*\*/g) || [];
+          const genericTerms = genericMatches.map(m => m.replace(/[`*]/g, '').trim()).filter(Boolean);
+          genericTerms.forEach(term => {
+            if (term.length > 3) {
+              const escapedTerm = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+              const regex = new RegExp('\\b' + escapedTerm + '\\b', 'gi');
+              corrected = corrected.replace(regex, term);
+            }
+          });
+          
+          if (enrichedAdditions.length > 0) {
+            corrected = corrected + ` (Memory Constraints: [${enrichedAdditions.join('; ')}])`;
+          }
+          activePositive = corrected;
+        }
       }
     }
     // Record intermediate compiled state at this gate node in topological chain
@@ -902,7 +1109,13 @@ export async function compileGraph(nodes, edges, settings) {
   if (compilationMode === 'thinking') {
     if (settings.mode === 'ai') {
       try {
-        const systemPrompt = `You are a professional prompt architect. Your task is to take a raw list of prompt tokens and rephrase them into a cohesive, natural, highly detailed, and beautifully styled positive prompt. Enhance the visual descriptors, vocabulary, and sensory details while retaining all original concepts. Output ONLY the rephrased prompt itself, with NO quotes, NO introductory text, and NO markdown.`;
+        let systemPrompt = `You are a professional prompt architect. Your task is to take a raw list of prompt tokens and rephrase them into a cohesive, natural, highly detailed, and beautifully styled positive prompt. Enhance the visual descriptors, vocabulary, and sensory details while retaining all original concepts. Output ONLY the rephrased prompt itself, with NO quotes, NO introductory text, and NO markdown.`;
+        
+        const memoryContent = getMemoryInput(nodes, edges, ''); // Canvas-wide fallback
+        if (memoryContent) {
+          systemPrompt += `\n\nCRITICAL CONSTRAINT: You MUST preserve and exactly employ the casing, spelling, variables, and function names present in the following Context Memory. Do not translate, paraphrase or modify them:\n${memoryContent}`;
+        }
+
         const userPrompt = `Raw Prompt elements: ${finalKept}`;
         const rephrased = await callAI(systemPrompt, userPrompt, settings);
         if (rephrased && rephrased.trim()) {
@@ -918,7 +1131,7 @@ export async function compileGraph(nodes, edges, settings) {
   } else if (compilationMode === 'deep-thinking') {
     if (settings.mode === 'ai') {
       try {
-        const systemPrompt = `You are a principal prompt architect and visual director. Your task is to compile the given visual prompt elements into an exhaustive, highly structured prompt specification document. 
+        let systemPrompt = `You are a principal prompt architect and visual director. Your task is to compile the given visual prompt elements into an exhaustive, highly structured prompt specification document. 
         Organize the output into these distinct sections using a premium Markdown layout:
         
         # VISUAL SPECIFICATION DOCUMENT
@@ -940,12 +1153,17 @@ export async function compileGraph(nodes, edges, settings) {
         - **Art Medium**: [Style description, artistic emulations]
         - **Effects & Grading**: [Grain, lens effects, particles, post-processing]
         
-        ## 5. NEGATIVE INHIBITIONS
-        - **Explicitly Suppress**: [Instruct to avoid these negative concepts: ${activeNegative}]
+        ## 5. NEGATIVE DIRECTIVES
+        - **Explicitly Suppress**: [Instruct to avoid these negative/suppressed concepts]
         
         Integrate all raw prompt elements naturally. Do not include meta-commentary or preambles. Output ONLY the beautifully structured Markdown specifications block.`;
         
-        const userPrompt = `Raw Positive Prompt elements: ${finalKept}\nNegative Prompt: ${activeNegative}`;
+        const memoryContent = getMemoryInput(nodes, edges, ''); // Canvas-wide fallback
+        if (memoryContent) {
+          systemPrompt += `\n\nCRITICAL CONSTRAINT: Preserve and exactly employ the casing, spelling, variables, and function names present in this Context Memory to ensure absolute code consistency:\n${memoryContent}`;
+        }
+
+        const userPrompt = `Raw Prompt elements: ${finalKept}`;
         const rephrased = await callAI(systemPrompt, userPrompt, settings);
         if (rephrased && rephrased.trim()) {
           formattedPositive = rephrased.trim();
@@ -958,6 +1176,36 @@ export async function compileGraph(nodes, edges, settings) {
       formattedPositive = offlineDeepThinkingSpec(keptOnly, activeNegative);
     }
   }
+
+  // 4. Offline Context Memory Verification Phase
+  let verifiedTerms = [];
+  const memoryNode = nodes.find(n => n.type === 'contextMemory');
+  const memoryContent = memoryNode?.data?.extractedMemory || '';
+  if (memoryContent) {
+    const matches = memoryContent.match(/`([^`]+)`|\*\*([^*]+)\*\*/g) || [];
+    const extractedTerms = matches.map(m => m.replace(/[`*]/g, '').trim()).filter(Boolean);
+    
+    const finalLower = formattedPositive.toLowerCase();
+    extractedTerms.forEach(term => {
+      if (term.length > 3 && finalLower.includes(term.toLowerCase())) {
+        if (!verifiedTerms.includes(term)) {
+          verifiedTerms.push(term);
+        }
+      }
+    });
+  }
+
+  stages.push({
+    name: 'Context Memory Verification',
+    status: memoryContent ? (verifiedTerms.length > 0 ? 'ok' : 'error') : 'info',
+    type: memoryContent ? (verifiedTerms.length > 0 ? 'ok' : 'err') : 'info',
+    desc: memoryContent 
+      ? (verifiedTerms.length > 0 
+         ? `✓ Checked and matched ${verifiedTerms.length} exact memory term(s) in Compiled Prompt:\n${verifiedTerms.map(t => `- \`${t}\``).join('\n')}`
+         : `⚠ Context Memory loaded but no exact variables/terms matched in Compiled Prompt.\nAssert casing & exact terms.`
+        )
+      : `No Context Memory Node active on canvas.`
+  });
 
   stages.push({
     name: 'Final De-conflict & Format',
@@ -1067,8 +1315,8 @@ ${formatList(groups.effects)}
 ### Fine-grain Details
 ${formatList(groups.detail)}
 
-## 5. NEGATIVE INHIBITIONS
+## 5. NEGATIVE DIRECTIVES
 ### Suppressed Concepts
-${negativeText ? negativeText.split(', ').map(x => `* **AVOID**: ${x}`).join('\n') : '* None suppressed'}`;
+${items.filter(x => x.text.startsWith('avoid ') || x.text.startsWith('do not ') || x.text.startsWith('without ')).length > 0 ? items.filter(x => x.text.startsWith('avoid ') || x.text.startsWith('do not ') || x.text.startsWith('without ')).map(x => `* **AVOID**: ${x.text.replace(/^(avoid\s+|do\s+not\s+use\s+|without\s+)/i, '')}`).join('\n') : '* None suppressed'}`;
 }
 

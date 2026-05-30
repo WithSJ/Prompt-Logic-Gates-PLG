@@ -7,6 +7,7 @@ Welcome to the **Prompt Logic Gates (PLG)** internal knowledge base. This wiki s
 ## 🗺️ Core Concepts
 
 *   [[Overview](overview.md)] - Executive summary of the Prompt Logic Gates concept, semantic prompt compilation philosophy, and design vision.
+*   [[Context Memory](memory.md)] - Detailed specifications of the Visual Context Memory Node, topological sorting, and exact-term constraints.
 *   [[Workflows](workflows.md)] - Structural guide on constructing prompt circuits, routing inputs, resolving gate traces, and troubleshooting logic graphs.
 
 ---

@@ -1,6 +1,6 @@
 ---
 category: wiki-concept
-updated: 2026-05-29
+updated: 2026-05-30
 tags: [plg, guide, workflows, tutorials]
 ---
 
@@ -52,7 +52,7 @@ graph TD
 
 ## 🛑 Workflow B: Isolated Concept Suppression (NOT Gate)
 
-Use this pattern when you want to explicitly suppress a specific style, object, or color, forcing it out of the positive prompt and routing it into negative memory.
+Use this pattern when you want to explicitly suppress a specific style, object, or color, forcing it out of the positive prompt and adding explicit negation instructions into the baseline.
 
 ### Steps to Build
 1.  Drag in an `AND Gate` compiling a scene (e.g. `dark medieval gothic cathedral, atmospheric mist`).
@@ -61,8 +61,8 @@ Use this pattern when you want to explicitly suppress a specific style, object, 
 4.  Route the AND gate output baseline stream to the NOT gate's file input. Connect the forbidden Prompt Box to the NOT gate's `a` input handle.
 5.  Route the NOT gate output baseline to the `Prompt File Viewer`.
 6.  Click **Compile**:
-    - The positive prompt window in the viewer will show a sanitized positive prompt (stripping any accidental terms related to `neon` or `bright`).
-    - The negative prompt window will show `bright neon lights` added to the suppression array.
+    - The compiled prompt window in the viewer will show a sanitized prompt (stripping any accidental terms related to `neon` or `bright`) and appending explicit negation instructions: `avoid bright neon lights`.
+    - There is no separate negative prompt window, keeping the generation prompt clean and unified.
 
 ---
 
@@ -97,4 +97,4 @@ graph LR
 
 *   **Saving Layouts**: Click the **Save** button in the top bar. This compiles the visual node coordinates and text fields into a local `.json` file (`plg-graph.json`) and downloads it to your machine.
 *   **Loading Layouts**: Click the **Load** button and select a previously saved `plg-graph.json` file. The workspace will restore all connections and node values automatically.
-*   **Exporting TXT**: Click the **Compile** button to run compiler stages. Then, click **Export TXT** to download a finalized `.txt` file containing the compiled positive and negative prompts.
+*   **Exporting TXT**: Click the **Compile** button to run compiler stages. Then, click **Export TXT** to download a finalized `.txt` file containing the compiled prompt.

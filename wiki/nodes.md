@@ -1,6 +1,6 @@
 ---
 category: wiki-concept
-updated: 2026-05-29
+updated: 2026-05-30
 tags: [plg, references, nodes, documentation]
 ---
 
@@ -16,7 +16,7 @@ Handles represent strict connection filters in the Visual Flow Editor. Connectin
 
 | Port ID | Stylized Handle CSS Class | Target/Source Data Shape | Connection Color |
 | :--- | :--- | :--- | :--- |
-| `file` | `className="file"` | File Baseline `{ positive: "", negative: "" }` | Silver / Grey |
+| `file` | `className="file"` | File Baseline `{ positive: "" }` | Silver / Grey |
 | `prompt` | `className="prompt"` | Raw Text String (Fragment) | Cyan / Sky Blue |
 | `questions` | `className="questions"` | Clarifying Questions Array `["Question 1", ...]` | Vibrant Orange |
 
@@ -72,13 +72,13 @@ These nodes execute compilation modifications on the baseline stream.
 
 ### NOT Gate
 *   **Unique Identifier**: `not`
-*   **Role**: Excises concepts from the positive baseline and routes them to the negative baseline.
+*   **Role**: Excises concepts from the positive baseline and appends explicit negation instructions (e.g. *avoid [concept]*).
 *   **Handles**:
     *   **Target** (Left):
         *   `file` - Input baseline stream.
-        *   `a` (Prompt) - Concept to suppress.
+        *   `a` (Prompt) - Concept A to suppress.
     *   **Source** (Right):
-        *   `file` - Sanitized baseline stream (carrying additions in the negative baseline).
+        *   `file` - Sanitized baseline stream carrying explicit negation instructions.
 
 ---
 
@@ -146,7 +146,7 @@ Helper nodes translating between Raw Prompt string states and File Baseline stat
 
 ### Prompt File Viewer
 *   **Unique Identifier**: `fileViewer`
-*   **Role**: Realtime visual monitor displaying the finalized state of compiled positive and negative prompts.
+*   **Role**: Realtime visual monitor displaying the finalized state of the compiled prompt.
 *   **Constraint**:
     > [!IMPORTANT]
     > **Singleton Constraint**: To ensure execution safety and prevent duplicated outputs, only one **Prompt File Viewer** node is allowed in the workspace at any time. Adding a second viewer will throw an error toast.

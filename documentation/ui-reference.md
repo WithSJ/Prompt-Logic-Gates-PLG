@@ -64,12 +64,13 @@ The left panel contains draggable node components organized by category.
 | Section Header | Nodes |
 | :--- | :--- |
 | **Sources** | File Node, Prompt Box, Prompt Concat, File Viewer, File to Prompt, Prompt to File |
+| **Context Memory** | Context Memory (Memory Bank) |
 | **Logic Gates** | AND Gate, OR Gate, NOT Gate |
 | **Human-in-the-Loop** | Ask AI Questions, Provide Answers |
 
 ### Node Cards
 Each palette entry is a draggable card with:
-- A **colored left accent bar** (4px, matching the node's accent color)
+- A **colored left accent bar** (4px, matching the node's accent color: Amber, Cyan, Orange, or Fuchsia-Purple)
 - An **icon badge** (32×32px rounded square with the node's symbol)
 - **Title** text (bold, 13px)
 - **Description** text (10.5px, truncated with ellipsis)
@@ -83,6 +84,8 @@ Two methods:
 Below the node cards, a "Pin Connections" legend shows:
 - 🟡 Amber dot = File Reference
 - 🔵 Cyan dot = Prompt Content
+- 🟠 Orange dot = Questions Array
+- 🟣 Purple dot = Context Memory Reference
 - Instructions: "Drag edge from an **output** pin to a matching **input** pin."
 
 ---
@@ -156,28 +159,24 @@ An empty state with a sparkle icon and the message: "Wire up a graph on the canv
 
 ### After Compilation
 
-The inspector shows 4 sections:
+The inspector shows 3 sections:
 
-#### Section 1: Positive Prompt
+#### Section 1: Compiled Prompt
 - Green left border
 - Monospace font, pre-wrapped
 - **Copy** button (shows "copied" for 1.5 seconds)
+- Displays the unified compiled prompt, complete with any embedded negation clauses or rule constraints.
 
-#### Section 2: Negative Prompt
-- Red left border
-- Same styling as positive
-- **Copy** button
-
-#### Section 3: Visual Compiler Pipeline
+#### Section 2: Visual Compiler Pipeline
 An expandable accordion of compilation stages. Each stage shows:
 - **Stage number** (monospace)
-- **Node label** (e.g., "Node 2: AND Gate (abc123)")
+- **Node label** (e.g., "Node 2: AND Gate (abc123)" or "Context Memory Verification")
 - **Status badge**: `ok` (green), `ai` (purple), `info` (cyan), or `error` (red)
-- **Expandable content**: Multi-line trace description showing what the gate did
+- **Expandable content**: Multi-line trace description showing what the gate did (or matching memory terms check results)
 
 The first stage is expanded by default. Click any stage header to toggle.
 
-#### Section 4: Compilation Breakdown
+#### Section 3: Compilation Breakdown
 A table showing every prompt term with:
 - **Term text** (monospace, struck through if dropped)
 - **Category badge** (colored by category: Subject=red, Environment=amber, Style=violet, etc.)
@@ -185,7 +184,7 @@ A table showing every prompt term with:
 - **Kept/Total counter** in the section header (e.g., "4/5 kept")
 
 ### Footer
-- **Export .txt** button: Downloads compiled prompts as a text file
+- **Export .txt** button: Downloads the final Compiled Prompt as a text file under `# Compiled Prompt`
 - **Clear All** button (red border): Clears the entire canvas (keeps the File Viewer)
 
 ---

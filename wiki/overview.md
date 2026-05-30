@@ -1,6 +1,6 @@
 ---
 category: wiki-concept
-updated: 2026-05-29
+updated: 2026-05-30
 tags: [plg, concepts, logic, prompts]
 ---
 
@@ -47,19 +47,18 @@ graph LR
 PLG splits this into three primary concepts:
 
 ### 1. The File Stream Baseline
-Instead of just working with standalone strings, prompt logic flows along a **File Stream baseline**. This stream carries the accumulated state of two variables:
-*   `activePositive`: The cumulative positive prompt instructions.
-*   `activeNegative`: The cumulative suppressed concepts (negative prompt).
+Instead of just working with standalone strings, prompt logic flows along a **File Stream baseline**. This stream carries the accumulated state of the prompt:
+*   `activePositive`: The cumulative prompt instructions, carrying both positive directives and explicit negative suppression rules.
 
 ### 2. Logic Operators (Gates)
 Logic operators intercept this file baseline stream, execute local transformations, and emit a modified baseline down the chain:
--   `AND Gate`: Synthesizes and merges new prompt fragments into the active positive stream.
+-   `AND Gate`: Synthesizes and merges new prompt fragments into the active stream.
 -   `OR Gate`: Compares two competing stylistic directions against the baseline context and selects the best fit.
--   `NOT Gate`: Excises positive terms and appends negative guidelines to the active negative stream.
+-   `NOT Gate`: Excises positive terms and appends explicit negation instructions (e.g. *avoid [concept]*) to specify what the model must not include.
 
 ### 3. Type Converters
-Since visual nodes can pass both **File Baselines** (carrying positive & negative states) and **Prompt Text Fragments** (raw string clips), converter nodes route boundaries between these channels:
-*   `File to Prompt`: Converts the active positive state of a file stream into a raw text fragment to feed into an input pin.
+Since visual nodes can pass both **File Baselines** (carrying the prompt state) and **Prompt Text Fragments** (raw string clips), converter nodes route boundaries between these channels:
+*   `File to Prompt`: Converts the active state of a file stream into a raw text fragment to feed into an input pin.
 *   `Prompt to File`: Overwrites a file baseline using a raw text fragment input.
 
 ---
@@ -69,3 +68,14 @@ Since visual nodes can pass both **File Baselines** (carrying positive & negativ
 *   **Complex Text-to-Image Generation**: Decoupling scene subjects, environments, camera settings, and grain effects into isolated nodes.
 *   **Prompt Regression Testing**: Iteratively toggling gates on/off in the visual IDE to isolate exactly which prompt fragment triggers negative model behaviors.
 *   **AI-Guided Prompt Development**: Utilizing conversational Q&A gates directly inline to automatically expand on prompt details.
+
+---
+
+## 🔗 Core Wiki Connections
+
+To navigate the visual prompt logic gates specification, trace these primary reference hubs:
+*   [[Visual Compiler Engine](compiler.md)] - Parser categories, scoring algorithms, and AI compiler prompts.
+*   [[Workspace Execution Architecture](architecture.md)] - Topological sorting, React Flow canvases, and state binders.
+*   [[Custom Nodes & Handles API](nodes.md)] - Detailed specifications of all inputs, outputs, and logic pins.
+*   [[Context Memory System](memory.md)] - MemPalace-style file ingestion, casing crawlers, and rule alignment.
+*   [[Visual Circuit Workflows](workflows.md)] - Guide to building, debugging, exporting, and loading prompt circuits.

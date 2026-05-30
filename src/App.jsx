@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ReactFlowProvider, useNodesState, useEdgesState, MarkerType } from '@xyflow/react';
-import { Play, Settings, Save, Upload, HelpCircle, Loader2, FilePlus } from 'lucide-react';
+import { Play, Settings, Save, Upload, HelpCircle, Loader2, FilePlus, Brain, Database } from 'lucide-react';
 import PLGCanvas from './components/PLGCanvas';
 import Inspector from './components/Inspector';
 import SettingsModal from './components/SettingsModal';
-import { compileGraph } from './compiler/semanticCompiler';
+import { compileGraph, callAI } from './compiler/semanticCompiler';
 
 // Local storage helper
 const Store = {
@@ -39,6 +39,11 @@ function PLGApp() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [isInitialLoadDone, setIsInitialLoadDone] = useState(false);
+
+  const nodesRef = useRef(nodes);
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
 
   const customOnNodesChange = useCallback((changes) => {
     const filtered = changes.filter((change) => {
@@ -180,13 +185,313 @@ function PLGApp() {
       onChangeNumInputs: (id, count) => {
         setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, numInputs: count } } : n));
       },
+      onChangeMemoryText: (id, txt) => {
+        setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, extractedMemory: txt } } : n));
+      },
+      onAddFiles: async (id, fileList) => {
+        const readPromises = fileList.map((file) => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              resolve({
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                content: e.target.result
+              });
+            };
+            reader.readAsText(file);
+          });
+        });
+        const loadedFiles = await Promise.all(readPromises);
+        setNodes((nds) => nds.map((n) => {
+          if (n.id === id) {
+            const currentFiles = n.data.files || [];
+            const nextFiles = [...currentFiles];
+            loadedFiles.forEach(lf => {
+              if (!nextFiles.some(f => f.name === lf.name)) {
+                nextFiles.push(lf);
+              }
+            });
+            return { ...n, data: { ...n.data, files: nextFiles } };
+          }
+          return n;
+        }));
+        showToast(`Loaded ${loadedFiles.length} file(s) into memory node`, 'ok');
+      },
+      onDeleteFile: (id, fileIdx) => {
+        setNodes((nds) => nds.map((n) => {
+          if (n.id === id) {
+            const currentFiles = n.data.files || [];
+            const nextFiles = currentFiles.filter((_, idx) => idx !== fileIdx);
+            return { ...n, data: { ...n.data, files: nextFiles } };
+          }
+          return n;
+        }));
+        showToast('File removed from memory node', 'info');
+      },
+      onExtractMemory: async (id) => {
+        setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, isExtracting: true } } : n));
+        try {
+          const nodeRef = nodesRef.current.find(n => n.id === id);
+          const files = nodeRef?.data?.files || [];
+          if (files.length === 0) {
+            throw new Error('Please upload at least one readable file (.txt, .md, .html, .json, .xml)');
+          }
+          
+          const combinedDocsText = files.map(f => {
+            return `--- FILE START: ${f.name} (type: ${f.type || 'text'}) ---\n${f.content}\n--- FILE END ---`;
+          }).join('\n\n');
+          
+          let synthesizedMemory = '';
+          if (settings.mode === 'ai') {
+            const systemInstruction = `You are a principal logic indexer and metadata database compiler, styled after the MemPalace indexing engine.
+Your task is to analyze the provided source files (.md, .txt, .html, .json, .xml) and index them into an exhaustive, highly structured Visual Context Memory Ledger.
+You must extract all technical specifications with extreme precision and absolute preservation of letter casing, symbols, and syntax.
+
+Structure the catalog under these specific, Obsidian-friendly HSL headers:
+
+# 🧠 MEMPALACE-STYLE CONTEXT LEDGER
+
+## 🏛 Workspace Hierarchy (Wings & Rooms & Halls)
+- **Wing: [Source Category]** -> (Grouping of files, e.g., Codebase, Style-Guides, Schemas)
+  - **Room: \`[Relative File Path]\`** -> [Brief 1-line description of the file's architectural role]
+    - **Hall: [Logical Section/Header Name]** -> [Detailed summary of this specific file portion]
+
+## 💻 Code Signatures, Variables & Database Schemas
+- **\`[Variable/Function/Constant/Key]\`**: 
+  - *Type*: [Variable / Function Signature / JSON Key / HTML Tag / Schema Attribute]
+  - *Exact Casing*: [Exact Casing-Sensitive representation, e.g. userId, fetch_data, NOTATION_CONSTANT]
+  - *Definition & Signature*: [Parameters, return types, key description, and strict syntax rules]
+  - *Context Location*: Room: \`[Relative File Path]\` -> Hall: [Section]
+
+## 🔑 Key Terms & Structured Entity Hints
+- **\`[Visual Concept/Key Entity]\`**:
+  - *Casing Rule*: [Preservation requirements]
+  - *Visual Description*: [Vivid details, visual semantics, and visual hints mapped from source data]
+
+## 🎨 Semantic Constraints & Style Rules
+- **[Aesthetic Rule/Visual Constraint]**: [Detailed description of formatting rules, colors, dimensions, camera setups, or stylistic instructions described in the files]
+
+## 📌 System Rules & Casing Invariants
+- **[Rule Title]**: [Explicit list of casing rules (camelCase, PascalCase, snake_case), consistency guidelines, and forbidden patterns derived from the source files]
+
+Use absolute exact casing, names, and parameters. Maintain 100% fidelity to the source documents. Respond with ONLY the beautifully structured Markdown ledger, without any conversational preamble, quotes, or meta-commentary.`;
+            
+            const response = await callAI(systemInstruction, combinedDocsText, settings);
+            synthesizedMemory = (response || '').trim();
+          } else {
+            // Offline High-Fidelity parsing engine (MemPalace style)
+            const extractedWings = {};
+            const extractedVars = [];
+            const extractedEntities = new Set();
+            const extractedRules = [];
+            
+            files.forEach(f => {
+              const fileName = f.name || 'unknown_file';
+              const ext = fileName.split('.').pop().toLowerCase();
+              const wingName = ['json', 'xml', 'html'].includes(ext) ? 'Data Schemas' : (ext === 'md' ? 'Documentation' : 'Source Code');
+              
+              if (!extractedWings[wingName]) {
+                extractedWings[wingName] = [];
+              }
+              extractedWings[wingName].push(fileName);
+              
+              const fileContent = f.content || '';
+              
+              // 1. If JSON, parse keys
+              if (ext === 'json') {
+                try {
+                  const obj = JSON.parse(fileContent);
+                  const scanKeys = (o, depth = 0) => {
+                    if (depth > 3 || !o || typeof o !== 'object') return;
+                    Object.keys(o).forEach(k => {
+                      if (!extractedVars.some(v => v.name === k)) {
+                        extractedVars.push({
+                          name: k,
+                          type: 'JSON Key',
+                          desc: `Key inside JSON schema structure (depth: ${depth})`,
+                          loc: fileName
+                        });
+                      }
+                      scanKeys(o[k], depth + 1);
+                    });
+                  };
+                  scanKeys(obj);
+                } catch (e) {
+                  // Fallback to regex if parse fails
+                }
+              }
+              
+              // 2. Line-by-line scanning
+              const lines = fileContent.split(/\r?\n/);
+              lines.forEach((line, idx) => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+                
+                // Extract functions or method signatures: something(args)
+                const funcMatches = trimmed.match(/\b([a-zA-Z_][a-zA-Z0-9_]*\s*\([^)]*\))\b/g);
+                if (funcMatches) {
+                  funcMatches.forEach(fSig => {
+                    const nameOnly = fSig.split('(')[0].trim();
+                    if (nameOnly.length > 3 && !['if', 'for', 'while', 'switch', 'catch', 'function'].includes(nameOnly)) {
+                      if (!extractedVars.some(v => v.name === fSig)) {
+                        extractedVars.push({
+                          name: fSig,
+                          type: 'Function Signature',
+                          desc: `Extracted functional signature from text buffer (line ${idx + 1})`,
+                          loc: fileName
+                        });
+                      }
+                    }
+                  });
+                }
+                
+                // Extract casing variables (camelCase, PascalCase, snake_case, CONSTANT_CASE)
+                // camelCase
+                const camelMatches = trimmed.match(/\b([a-z]+[A-Z][a-zA-Z0-9]*)\b/g);
+                if (camelMatches) {
+                  camelMatches.forEach(c => {
+                    if (c.length > 3 && !extractedVars.some(v => v.name === c)) {
+                      extractedVars.push({ name: c, type: 'camelCase Variable', desc: `camelCase identifier in code buffer`, loc: fileName });
+                    }
+                  });
+                }
+                
+                // snake_case & CONSTANT_CASE
+                const snakeMatches = trimmed.match(/\b([a-zA-Z0-9]+_[a-zA-Z0-9_]+)\b/g);
+                if (snakeMatches) {
+                  snakeMatches.forEach(s => {
+                    if (s.length > 3 && !extractedVars.some(v => v.name === s)) {
+                      const isConstant = s === s.toUpperCase();
+                      extractedVars.push({
+                        name: s,
+                        type: isConstant ? 'CONSTANT_CASE Constant' : 'snake_case Variable',
+                        desc: isConstant ? 'Global constant casing rule representation' : 'snake_case identifier in buffer',
+                        loc: fileName
+                      });
+                    }
+                  });
+                }
+
+                // PascalCase
+                const pascalMatches = trimmed.match(/\b([A-Z][a-z0-9]+[A-Z][a-zA-Z0-9]*)\b/g);
+                if (pascalMatches) {
+                  pascalMatches.forEach(p => {
+                    if (p.length > 3 && !extractedVars.some(v => v.name === p)) {
+                      extractedVars.push({ name: p, type: 'PascalCase Class/Type', desc: `PascalCase type/class declaration`, loc: fileName });
+                    }
+                  });
+                }
+                
+                // 3. Extract backtick terms as Entity Hints
+                const tickMatches = trimmed.match(/`([^`]+)`|\*\*([^*]+)\*\*/g);
+                if (tickMatches) {
+                  tickMatches.forEach(m => {
+                    const clean = m.replace(/[`*]/g, '').trim();
+                    if (clean.length > 2 && clean.length < 40 && !clean.includes(' ')) {
+                      extractedEntities.add(clean);
+                    }
+                  });
+                }
+                
+                // 4. Extract rule statements (must, should, always, never, avoid, constraint)
+                if (/\b(must|should|always|never|avoid|rules?|convention|styles?|colors?)\b/i.test(trimmed)) {
+                  if (trimmed.length > 15 && trimmed.length < 150 && !trimmed.startsWith('#') && !trimmed.startsWith('//') && !trimmed.startsWith('/*')) {
+                    const cleanRule = trimmed.replace(/^[-*+\s\d.]+/g, '').trim();
+                    if (!extractedRules.includes(cleanRule) && extractedRules.length < 15) {
+                      extractedRules.push(cleanRule);
+                    }
+                  }
+                }
+              });
+            });
+            
+            // Format hierarchy markdown
+            let hierarchyMd = '';
+            Object.keys(extractedWings).forEach(wing => {
+              hierarchyMd += `- **Wing: ${wing}**\n`;
+              extractedWings[wing].forEach(room => {
+                hierarchyMd += `  - **Room: \`${room}\`** -> Loaded buffer resource active on canvas\n`;
+              });
+            });
+            
+            // Format variables markdown
+            let varsMd = '';
+            if (extractedVars.length > 0) {
+              extractedVars.slice(0, 30).forEach(v => {
+                varsMd += `- **\`${v.name}\`**:\n  - *Type*: ${v.type}\n  - *Exact Casing*: \`${v.name}\`\n  - *Definition*: ${v.desc}\n  - *Context Location*: Room: \`${v.loc}\`\n`;
+              });
+            } else {
+              varsMd = '- No variables or code signatures auto-detected. Type manually if needed.\n';
+            }
+            
+            // Format entity hints
+            let entitiesMd = '';
+            if (extractedEntities.size > 0) {
+              Array.from(extractedEntities).slice(0, 20).forEach(ent => {
+                entitiesMd += `- **\`${ent}\`**:\n  - *Casing Rule*: Strict preservation required\n  - *Visual Description*: Indexed keyword from source markup\n`;
+              });
+            } else {
+              entitiesMd = '- No entity hints extracted.\n';
+            }
+            
+            // Format rules
+            let rulesMd = '';
+            if (extractedRules.length > 0) {
+              extractedRules.forEach(rule => {
+                rulesMd += `- **Constraint**: ${rule}\n`;
+              });
+            } else {
+              rulesMd = `- **Casing Rule**: camelCase for local variables, PascalCase for classes, snake_case for parameters.\n- **Vocabulary Rule**: Match vocabulary in loaded documents.\n`;
+            }
+            
+            synthesizedMemory = `# 🧠 MEMPALACE-STYLE CONTEXT LEDGER
+ 
+## 🏛 Workspace Hierarchy (Wings & Rooms & Halls)
+${hierarchyMd || '- No source files registered.'}
+ 
+## 💻 Code Signatures, Variables & Database Schemas
+${varsMd}
+ 
+## 🔑 Key Terms & Visual Entity Hints
+${entitiesMd}
+ 
+## 🎨 Semantic Constraints & Style Rules
+${rulesMd}
+ 
+## 📌 System Rules & Casing Invariants
+- Maintain strict exact casing and nomenclature across all compiled prompts.
+- Preserve uppercase/lowercase symbols exactly as defined.
+- Enforce visual prompt parameters specified in design guidelines.`;
+          }
+          
+          setNodes((nds) => nds.map((n) => {
+            if (n.id === id) {
+              return {
+                ...n,
+                data: {
+                  ...n.data,
+                  extractedMemory: synthesizedMemory,
+                  isExtracting: false
+                }
+              };
+            }
+            return n;
+          }));
+          showToast('Context Memory compiled successfully ✦', 'ok');
+        } catch (err) {
+          showToast(err.message || 'Memory build failed', 'err');
+          setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, isExtracting: false } } : n));
+        }
+      },
       onDeleteNode: () => {
         if (type === 'fileViewer') return;
         setNodes((nds) => nds.filter((n) => n.id !== nId));
         setEdges((eds) => eds.filter((e) => e.source !== nId && e.target !== nId));
       }
     };
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, settings, showToast]);
 
   // Seed Example Graph matching standard specifications
   const seedExample = useCallback(() => {
@@ -358,7 +663,9 @@ function PLGApp() {
         numQuestions: data.numQuestions,
         numInputs: data.numInputs,
         compiledPositive: data.compiledPositive,
-        compiledNegative: data.compiledNegative
+        compiledNegative: data.compiledNegative,
+        files: data.files,
+        extractedMemory: data.extractedMemory
       }
     }));
 
@@ -502,7 +809,9 @@ function PLGApp() {
         questions: data.questions,
         answers: data.answers,
         numQuestions: data.numQuestions,
-        numInputs: data.numInputs
+        numInputs: data.numInputs,
+        files: data.files,
+        extractedMemory: data.extractedMemory
       }
     }));
 
@@ -597,19 +906,18 @@ function PLGApp() {
     e.target.value = '';
   };
 
-  // Export positive and negative compiled prompt strings to plain text (.txt)
+  // Export compiled prompt string to plain text (.txt)
   const handleExportTxt = () => {
     const fvNode = nodes.find((n) => n.type === 'fileViewer');
     const posPrompt = fvNode?.data?.compiledPositive || '';
-    const negPrompt = fvNode?.data?.compiledNegative || '';
 
-    if (!posPrompt && !negPrompt) {
-      showToast('No compiled prompts inside Prompt File Viewer to export. Compile the graph first.', 'info');
+    if (!posPrompt) {
+      showToast('No compiled prompt inside Prompt File Viewer to export. Compile the graph first.', 'info');
       return;
     }
 
     const filename = fileTitle || 'prompt.txt';
-    const fileBody = `# Compiled Positive Prompt\n${posPrompt}\n\n# Compiled Negative Prompt\n${negPrompt}\n`;
+    const fileBody = `# Compiled Prompt\n${posPrompt}\n`;
     
     const blob = new Blob([fileBody], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -817,6 +1125,28 @@ function PLGApp() {
               </div>
             </div>
 
+            <div className="pal-h">Context Memory</div>
+            <div 
+              className="pnode" 
+              draggable 
+              onDragStart={(e) => onDragStart(e, 'contextMemory')}
+              onClick={() => {
+                const id = `mem_${Date.now()}`;
+                setNodes((nds) => nds.concat({
+                  id, type: 'contextMemory',
+                  position: { x: 100 + Math.random() * 80, y: 150 + Math.random() * 80 },
+                  data: { files: [], extractedMemory: '', isExtracting: false, ...bindNodeCallbacks(id, 'contextMemory') }
+                }));
+               }}
+              style={{ '--accent': 'var(--memory)' }}
+            >
+              <div className="ic">🧠</div>
+              <div className="meta">
+                <div className="t">Memory Bank</div>
+                <div className="d">Sync codebase &amp; variables</div>
+              </div>
+            </div>
+
             <div className="pal-h">Logic Gates</div>
             <div 
               className="pnode" 
@@ -876,8 +1206,8 @@ function PLGApp() {
             >
               <div className="ic">¬</div>
               <div className="meta">
-                <div className="t">NOT Gate</div>
-                <div className="d">Negative prompt control</div>
+                 <div className="t">NOT Gate</div>
+                 <div className="d">Explicit negation control</div>
               </div>
             </div>
 
@@ -951,6 +1281,7 @@ function PLGApp() {
           setEdges={setEdges}
           onNodeSelect={() => {}}
           showToast={showToast}
+          bindNodeCallbacks={bindNodeCallbacks}
         />
 
         {/* Right Inspector with Pipeline Debugger */}

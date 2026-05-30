@@ -41,9 +41,10 @@ All colors are defined as CSS custom properties on `:root`.
 | :--- | :--- | :--- | :--- |
 | `--file` | `#f2b134` | Amber | File handles, file-related UI |
 | `--prompt` | `#22d3ee` | Cyan | Prompt handles, brand accent |
+| `--memory` | `#c084fc` | Fuchsia-Purple | Context Memory handle, Memory node, upload accents |
 | `--and` | `#3b82f6` | Blue | AND gate accent |
 | `--or` | `#a855f7` | Violet | OR gate accent, AI status badges |
-| `--not` | `#ef4444` | Red | NOT gate accent, negative prompts |
+| `--not` | `#ef4444` | Red | NOT gate accent, explicit negations |
 | `--ok` | `#34d399` | Green | Success states, positive prompts |
 | `--warn` | `#fbbf24` | Amber | Warning states |
 | `--err` | `#f87171` | Red | Error states, danger buttons |
@@ -108,7 +109,7 @@ Fonts are loaded via Google Fonts in [index.html](file:///c:/Users/jadam/Desktop
 ## 4. Component Styles
 
 ### Nodes (`.rf-node`)
-- Width: `220px` (except File Viewer at `280px`, Prompt Concat at `200px`, Answer Questions at `320px`, Ask Questions at `260px`)
+- Width: `220px` (except File Viewer and Context Memory at `280px`, Prompt Concat at `200px`, Answer Questions at `320px`, Ask Questions at `260px`)
 - Background: `var(--node)` → `#19232e`
 - Border: `1px solid var(--line2)`
 - Border radius: `var(--radius)` → `12px`
@@ -118,7 +119,7 @@ Fonts are loaded via Google Fonts in [index.html](file:///c:/Users/jadam/Desktop
 ### Node Headers (`.rf-node-header`)
 - Height: `38px`
 - Background: Linear gradient from `var(--node-head)` to a darker mix
-- Left accent bar: 4px wide stripe in the node's accent color
+- Left accent bar: 4px wide stripe in the node's accent color (Amber, Cyan, Blue, Violet, Red, Orange, or Fuchsia-Purple)
 - Contains: Status dot (8px circle with glow), icon, title text, delete button
 
 ### Handles (`.react-flow__handle`)
@@ -126,6 +127,14 @@ Fonts are loaded via Google Fonts in [index.html](file:///c:/Users/jadam/Desktop
 - Border: `2.5px solid var(--bg)`
 - Hover: `scale(1.35)` + brightness increase
 - Valid connection state: Green outer glow ring
+- Pin colorings: Gold (`.file`), Cyan (`.prompt`), Orange (`.questions`), or Fuchsia (`.memory`)
+
+### Memory Bank Components
+- **Upload Zone (`.memory-upload-zone`)**: 1.5px dashed border (`var(--line2)`), transitions to `--memory` on hover, flexible flex-col layout.
+- **File List (`.memory-file-list`)**: Max height 120px with y-scrollbar, listing active buffers.
+- **File Items (`.memory-file-item`)**: Sleek dark items (`var(--bg2)`) containing filenames, monospace sizes, and red hover delete buttons (`var(--err)`).
+- **Build Button (`.memory-btn`)**: Linear gradient background (`#9333ea` to `#7e22ce`), bright fuchsia border, glowing shadow.
+- **Section Titles (`.memory-section-title`)**: 10px uppercase, letter-spacing 0.8px, `--memory` accent color.
 
 ### Palette Cards (`.pnode`)
 - Rounded corners (9px)

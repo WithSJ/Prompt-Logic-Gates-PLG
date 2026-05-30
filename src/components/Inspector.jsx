@@ -101,31 +101,17 @@ export default function Inspector({
           </div>
         ) : (
           <>
-            {/* 1. Positive Prompt */}
+            {/* 1. Compiled Prompt */}
             <div className="osec">
               <div className="osec-h">
                 <span className="sq" style={{ background: 'var(--ok)' }}></span>
-                Positive Prompt
+                Compiled Prompt
                 <button className="copybtn" onClick={() => handleCopy(compileResult.positive, 'pos')}>
                   {copiedPos ? 'copied' : 'copy'}
                 </button>
               </div>
               <div className={`obox pos ${compileResult.positive ? '' : 'empty'}`}>
                 {compileResult.positive || 'nothing compiled yet'}
-              </div>
-            </div>
-
-            {/* 2. Negative Prompt */}
-            <div className="osec">
-              <div className="osec-h">
-                <span className="sq" style={{ background: 'var(--not)' }}></span>
-                Negative Prompt
-                <button className="copybtn" onClick={() => handleCopy(compileResult.negative, 'neg')}>
-                  {copiedNeg ? 'copied' : 'copy'}
-                </button>
-              </div>
-              <div className={`obox neg ${compileResult.negative ? '' : 'empty'}`}>
-                {compileResult.negative || 'none'}
               </div>
             </div>
 

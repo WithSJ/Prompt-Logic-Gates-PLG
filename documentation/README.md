@@ -59,15 +59,16 @@ Each node carries a specific prompt fragment. Gates merge, select, or suppress t
 | Feature | Description |
 | :--- | :--- |
 | **Visual Node Editor** | Drag-and-drop nodes onto an infinite canvas, wire them together |
-| **11 Node Types** | File nodes, prompt boxes, AND/OR/NOT gates, converters, Q&A nodes |
+| **12 Node Types** | File nodes, prompt boxes, gates, Context Memory, type converters, Q&A nodes |
 | **Dual Compilation Modes** | Offline rule-based engine OR live AI-assisted compilation |
 | **4 AI Providers** | Anthropic Claude, OpenAI ChatGPT, Google Gemini, OpenRouter |
+| **Context Memory Ledger** | Client-side indexing catalog syncing exact case-sensitive variable definitions |
 | **Semantic Conflict Detection** | Auto-detects contradictions like "realistic" + "cartoon" |
 | **Category Priority Sorting** | Subjects rank above styles, styles above effects |
 | **Interactive Q&A Refinement** | AI asks clarifying questions; your answers refine the prompt |
 | **Visual Pipeline Debugger** | Step-by-step compilation trace in the right panel |
 | **Save/Load Circuits** | Export/import graph configurations as JSON files |
-| **Export Compiled Prompts** | Download final positive + negative prompts as `.txt` |
+| **Export Compiled Prompt** | Download final Compiled Prompt in plain text `.txt` |
 | **Auto-Save** | Workspace persists to LocalStorage automatically |
 
 ### Who Is This For?

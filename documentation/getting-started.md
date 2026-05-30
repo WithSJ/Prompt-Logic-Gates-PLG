@@ -91,12 +91,11 @@ File Node (prompt.txt)
 1. **Look at the canvas**: You'll see 5 nodes pre-wired together.
 2. **Click the blue "Compile" button** in the top bar.
 3. **Check the right panel**: It now shows:
-   - **Positive Prompt**: `Abandoned hospital, PS1 graphics` (merged by the AND gate, sorted by category priority)
-   - **Negative Prompt**: `cute cartoon style` (suppressed by the NOT gate)
-   - **Visual Compiler Pipeline**: An expandable step-by-step trace showing what each node did
+   - **Compiled Prompt**: `Abandoned hospital, PS1 graphics (avoid cute cartoon style)` (merged by the AND gate, sorted by category priority, with explicit negation appended by the NOT gate)
+   - **Visual Compiler Pipeline**: An expandable step-by-step trace showing what each node did (including the Context Memory Verification check)
 
-4. **Click "copy"** next to the positive prompt to copy it to your clipboard.
-5. **Paste it into your AI image generator** of choice.
+4. **Click "copy"** next to the Compiled Prompt to copy it to your clipboard.
+5. **Paste it into your AI generator** of choice.
 
 ---
 

@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { FileText, Type, Trash2, HelpCircle, CheckSquare } from 'lucide-react';
+import { FileText, Type, Trash2, HelpCircle, CheckSquare, Brain, Database, UploadCloud, X, FileCode } from 'lucide-react';
 
 // Custom Delete Button for Header
 const NodeHeader = ({ title, sub, accent, icon: Icon, onDelete }) => (
@@ -136,6 +136,14 @@ export const ANDNode = memo(({ id, data, selected }) => {
         style={{ top: '106px' }}
         title="Prompt B"
       />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="memory"
+        className="memory"
+        style={{ top: '134px' }}
+        title="Input Context Memory"
+      />
       {/* Source Handles */}
       <Handle
         type="source"
@@ -190,6 +198,14 @@ export const ORNode = memo(({ id, data, selected }) => {
         style={{ top: '106px' }}
         title="Prompt B"
       />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="memory"
+        className="memory"
+        style={{ top: '134px' }}
+        title="Input Context Memory"
+      />
       {/* Source Handles */}
       <Handle
         type="source"
@@ -216,7 +232,7 @@ export const NOTNode = memo(({ id, data, selected }) => {
       />
       <div className="rf-node-body">
         <div className="gate-desc">
-          Reads <b>file</b> → writes <b>A</b> into negative memory to suppress it.
+          Reads <b>file</b> → strips <b>A</b> and injects negative instructions to suppress A.
         </div>
       </div>
       {/* Target Handles */}
@@ -234,7 +250,15 @@ export const NOTNode = memo(({ id, data, selected }) => {
         id="a"
         className="prompt"
         style={{ top: '78px' }}
-        title="Negative Prompt A"
+        title="Concept A to suppress"
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="memory"
+        className="memory"
+        style={{ top: '106px' }}
+        title="Input Context Memory"
       />
       {/* Source Handles */}
       <Handle
@@ -252,7 +276,6 @@ export const NOTNode = memo(({ id, data, selected }) => {
 export const FileViewerNode = memo(({ id, data, selected }) => {
   const onDelete = data.onDeleteNode || (() => {});
   const posText = data.compiledPositive || '';
-  const negText = data.compiledNegative || '';
 
   return (
     <div className={`rf-node ${selected ? 'selected' : ''}`} style={{ '--accent': 'var(--file)', width: '280px' }}>
@@ -266,47 +289,25 @@ export const FileViewerNode = memo(({ id, data, selected }) => {
       <div className="rf-node-body" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--ok)', fontWeight: '600' }}>
-            Positive Prompt
+            Compiled Prompt
           </div>
           <div style={{ 
             background: 'var(--bg)', 
             border: '1px solid var(--line)', 
             borderRadius: '6px', 
             padding: '6px 8px', 
-            fontSize: '11px', 
+            fontSize: '11.5px', 
             fontFamily: 'var(--mono)', 
-            minHeight: '34px', 
-            maxHeight: '70px', 
+            minHeight: '70px', 
+            maxHeight: '130px', 
             overflowY: 'auto',
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-all',
             color: posText ? 'var(--txt)' : 'var(--txt-faint)',
-            fontStyle: posText ? 'normal' : 'italic'
+            fontStyle: posText ? 'normal' : 'italic',
+            lineHeight: '1.4'
           }}>
             {posText || 'empty baseline'}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--not)', fontWeight: '600' }}>
-            Negative Prompt
-          </div>
-          <div style={{ 
-            background: 'var(--bg)', 
-            border: '1px solid var(--line)', 
-            borderRadius: '6px', 
-            padding: '6px 8px', 
-            fontSize: '11px', 
-            fontFamily: 'var(--mono)', 
-            minHeight: '34px', 
-            maxHeight: '70px', 
-            overflowY: 'auto',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-all',
-            color: negText ? 'var(--txt)' : 'var(--txt-faint)',
-            fontStyle: negText ? 'normal' : 'italic'
-          }}>
-            {negText || 'none'}
           </div>
         </div>
       </div>
@@ -528,7 +529,7 @@ export const AnswerQuestionsNode = memo(({ id, data, selected }) => {
         position={Position.Left}
         id="questions"
         className="questions"
-        style={{ top: '40%' }}
+        style={{ top: '35%' }}
         title="Clarifying Questions List"
       />
       <Handle
@@ -536,8 +537,16 @@ export const AnswerQuestionsNode = memo(({ id, data, selected }) => {
         position={Position.Left}
         id="file"
         className="file"
-        style={{ top: '70%' }}
+        style={{ top: '65%' }}
         title="Input File State"
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="memory"
+        className="memory"
+        style={{ top: '85%' }}
+        title="Input Context Memory"
       />
       {/* Source Handles */}
       <Handle
@@ -688,6 +697,160 @@ export const PromptToFileNode = memo(({ id, data, selected }) => {
   );
 });
 
+// Context Memory Node Component
+export const ContextMemoryNode = memo(({ id, data, selected }) => {
+  const onDelete = data.onDeleteNode || (() => {});
+  const files = data.files || [];
+  const extractedMemory = data.extractedMemory || '';
+  const isExtracting = data.isExtracting || false;
+
+  const triggerFileSelect = () => {
+    document.getElementById("file_upload_" + id)?.click();
+  };
+
+  const handleFileChange = (e) => {
+    const fileList = Array.from(e.target.files || []);
+    if (fileList.length > 0) {
+      data.onAddFiles(id, fileList);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const fileList = Array.from(e.dataTransfer.files || []);
+    const validFiles = fileList.filter(f => {
+      const ext = f.name.split('.').pop().toLowerCase();
+      return ['md', 'txt', 'html', 'json', 'xml'].includes(ext);
+    });
+    if (validFiles.length > 0) {
+      data.onAddFiles(id, validFiles);
+    }
+  };
+
+  return (
+    <div className={`rf-node ${selected ? 'selected' : ''}`} style={{ '--accent': 'var(--memory)', width: '280px' }}>
+      <NodeHeader 
+        title="Context Memory" 
+        sub="codebase sync" 
+        accent="var(--memory)" 
+        icon={Brain} 
+        onDelete={onDelete}
+      />
+      <div className="rf-node-body">
+        {/* Upload dashed zone */}
+        <div 
+          className="memory-upload-zone nodrag"
+          onClick={triggerFileSelect}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          <UploadCloud size={18} />
+          <span style={{ fontSize: '11px', fontWeight: '500' }}>Drop or Click to Upload</span>
+          <span style={{ fontSize: '9px', opacity: 0.6 }}>.md, .txt, .html, .json, .xml</span>
+        </div>
+        <input 
+          type="file" 
+          multiple 
+          id={"file_upload_" + id} 
+          style={{ display: 'none' }} 
+          accept=".md,.txt,.html,.json,.xml" 
+          onChange={handleFileChange}
+          className="nodrag"
+        />
+
+        {/* Uploaded Files list */}
+        {files.length > 0 && (
+          <div className="memory-file-list nodrag">
+            {files.map((file, idx) => (
+              <div className="memory-file-item" key={idx}>
+                <FileCode size={12} style={{ color: 'var(--memory)' }} />
+                <span className="name" title={file.name}>{file.name}</span>
+                <span className="size">{(file.size / 1024).toFixed(1)}k</span>
+                <button 
+                  className="del"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    data.onDeleteFile(id, idx);
+                  }}
+                  title="Remove File"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Build Button */}
+        <button
+          className="memory-btn nodrag"
+          onClick={() => data.onExtractMemory(id)}
+          disabled={isExtracting || files.length === 0}
+        >
+          {isExtracting ? (
+            <>
+              <span className="spin" style={{ borderTopColor: '#fff', width: '12px', height: '12px' }}></span>
+              <span>Syncing Memory...</span>
+            </>
+          ) : (
+            <>
+              <Brain size={13} />
+              <span>Build Context Memory</span>
+            </>
+          )}
+        </button>
+
+        {/* Extracted Text Preview */}
+        <div className="memory-section-title">Context Memory Preview (.md)</div>
+        <textarea
+          value={extractedMemory}
+          onChange={(e) => data.onChangeMemoryText(id, e.target.value)}
+          placeholder="No memory built yet. Load files above and click 'Build Context Memory' to parse key terms..."
+          className="nodrag"
+          style={{ 
+            minHeight: '100px', 
+            fontSize: '11px', 
+            fontFamily: 'var(--mono)',
+            background: 'var(--bg)',
+            border: '1px solid var(--line)',
+            borderRadius: '6px',
+            color: 'var(--txt)',
+            resize: 'vertical',
+            width: '100%',
+            boxSizing: 'border-box'
+          }}
+        />
+      </div>
+
+      {/* Target handle for file stream */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="file"
+        className="file"
+        style={{ top: '56px' }}
+        title="Input File State"
+      />
+
+      {/* Source handle for memory stream */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="memory"
+        className="memory"
+        style={{ top: '50%' }}
+        title="Output Context Memory"
+      />
+    </div>
+  );
+});
+
 // Pack custom node types for React Flow registry
 export const nodeTypes = {
   fileNode: FileNode,
@@ -701,4 +864,5 @@ export const nodeTypes = {
   answerQuestions: AnswerQuestionsNode,
   promptConcat: PromptConcatNode,
   promptToFile: PromptToFileNode,
+  contextMemory: ContextMemoryNode,
 };

@@ -23,43 +23,49 @@ export default function PLGCanvas({
   setNodes, 
   setEdges,
   onNodeSelect,
-  showToast
+  showToast,
+  bindNodeCallbacks
 }) {
   const reactFlowWrapper = useRef(null);
   const { screenToFlowPosition } = useReactFlow();
-
-  // Validate connections: File to File, Prompt to Prompt, Questions to Questions
+ 
+  // Validate connections: File to File, Prompt to Prompt, Questions to Questions, Memory to Memory
   const isValidConnection = useCallback((connection) => {
     // 1. Prevent connecting a node to itself
     if (connection.source === connection.target) return false;
-
+ 
     // 2. Resolve handle types based on handles ID
     const isSourceFile = connection.sourceHandle === 'file';
     const isTargetFile = connection.targetHandle === 'file';
     const isSourceQuestions = connection.sourceHandle === 'questions';
     const isTargetQuestions = connection.targetHandle === 'questions';
-
+    const isSourceMemory = connection.sourceHandle === 'memory';
+    const isTargetMemory = connection.targetHandle === 'memory';
+ 
     // File connections must match on both ends
     if (isSourceFile !== isTargetFile) return false;
     // Questions connections must match on both ends
     if (isSourceQuestions !== isTargetQuestions) return false;
-
+    // Memory connections must match on both ends
+    if (isSourceMemory !== isTargetMemory) return false;
+ 
     // 3. Ensure single connection per input handle (target)
     const targetHasEdge = edges.some(
       (edge) => edge.target === connection.target && edge.targetHandle === connection.targetHandle
     );
     if (targetHasEdge) return false;
-
+ 
     return true;
   }, [edges]);
-
+ 
   // Connect handler
   const onConnect = useCallback((params) => {
     // Determine edge color based on handle type
     const isFileEdge = params.sourceHandle === 'file';
     const isQuestionsEdge = params.sourceHandle === 'questions';
-    const edgeColor = isFileEdge ? 'var(--file)' : isQuestionsEdge ? '#fb923c' : 'var(--prompt)';
-
+    const isMemoryEdge = params.sourceHandle === 'memory';
+    const edgeColor = isFileEdge ? 'var(--file)' : isQuestionsEdge ? '#fb923c' : isMemoryEdge ? 'var(--memory)' : 'var(--prompt)';
+ 
     const newEdge = {
       ...params,
       id: `e_${params.source}_${params.sourceHandle}_to_${params.target}_${params.targetHandle}`,
@@ -71,23 +77,23 @@ export default function PLGCanvas({
         color: edgeColor,
       },
     };
-
+ 
     setEdges((eds) => addEdge(newEdge, eds));
   }, [setEdges]);
-
+ 
   // Drag over canvas helper
   const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
-
+ 
   // Drop element on canvas helper
   const onDrop = useCallback((event) => {
     event.preventDefault();
-
+ 
     const type = event.dataTransfer.getData('application/reactflow') || event.dataTransfer.getData('add');
     if (!type) return;
-
+ 
     if (type === 'fileViewer') {
       const exists = nodes.some((n) => n.type === 'fileViewer');
       if (exists) {
@@ -99,13 +105,13 @@ export default function PLGCanvas({
         return;
       }
     }
-
+ 
     // Resolve node position on react flow grid
     const position = screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,
     });
-
+ 
     const nodeId = `${type}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     
     // Inject methods inside node data so nodes can update parent state directly
@@ -114,42 +120,21 @@ export default function PLGCanvas({
       type,
       position,
       data: {
-        title: type.toUpperCase(),
+        title: type === 'contextMemory' ? 'Context Memory' : type.toUpperCase(),
         filename: type === 'fileNode' ? 'prompt.txt' : undefined,
         text: type === 'promptBox' ? '' : undefined,
         questions: type === 'askQuestion' || type === 'answerQuestions' ? [] : undefined,
         answers: type === 'answerQuestions' ? {} : undefined,
         numQuestions: type === 'askQuestion' ? 3 : undefined,
-        onChangeFilename: (id, name) => {
-          setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, filename: name } } : n));
-        },
-        onChangeText: (id, txt) => {
-          setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, text: txt } } : n));
-        },
-        onChangeAnswer: (id, idx, val) => {
-          setNodes((nds) => nds.map((n) => {
-            if (n.id === id) {
-              const answers = { ...(n.data.answers || {}), [idx]: val };
-              return {
-                ...n,
-                data: { ...n.data, answers }
-              };
-            }
-            return n;
-          }));
-        },
-        onChangeNumQuestions: (id, count) => {
-          setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, numQuestions: count } } : n));
-        },
-        onDeleteNode: () => {
-          setNodes((nds) => nds.filter((n) => n.id !== nodeId));
-          setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
-        }
+        files: type === 'contextMemory' ? [] : undefined,
+        extractedMemory: type === 'contextMemory' ? '' : undefined,
+        isExtracting: type === 'contextMemory' ? false : undefined,
+        ...bindNodeCallbacks(nodeId, type)
       },
     };
-
+ 
     setNodes((nds) => nds.concat(newNode));
-  }, [screenToFlowPosition, setNodes, setEdges]);
+  }, [screenToFlowPosition, setNodes, setEdges, nodes, showToast, bindNodeCallbacks]);
 
   // Handle click node selections
   const onNodeClick = useCallback((_, node) => {

@@ -31,11 +31,11 @@ graph LR
 ## 🚀 Key Features
 
 *   **⚡ Visual Prompt Programming**: Build prompts like logical circuits using custom React Flow nodes.
-*   **⛓️ File Stream Baselines**: Pass robust prompt states (both positive and negative instructions) downstream through dedicated baselines.
+*   **⛓️ File Stream Baselines**: Pass robust prompt states downstream through dedicated baselines.
 *   **🎛️ Custom Logic Gates**:
     *   **AND Gate**: Merge prompt fragments dynamically.
     *   **OR Gate**: Toggle and alternate stylistic paths.
-    *   **NOT Gate**: Remove unwanted concepts and append them to negative prompts.
+    *   **NOT Gate**: Suppress unwanted concepts and append explicit negation instructions (e.g. "avoid concept") directly to the baseline.
 *   **🔮 Live Compiler Engine**: See compiled output in real-time as you connect, disconnect, and tweak nodes.
 *   **📚 obsidian-Compatible Compounding Wiki**: Full technical specifications and architecture design logs are built-in.
 

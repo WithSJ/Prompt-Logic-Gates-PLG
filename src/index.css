@@ -18,6 +18,7 @@
   --or: #a855f7;        /* violet */
   --not: #ef4444;       /* red */
   --ok: #34d399;        /* green */
+  --memory: #c084fc;    /* bright purple memory */
   --warn: #fbbf24;      /* amber warn */
   --err: #f87171;       /* red err */
 
@@ -474,6 +475,9 @@ input, textarea, select {
 }
 .react-flow__handle.questions {
   background: #fb923c !important; /* Warm Orange questions pin */
+}
+.react-flow__handle.memory {
+  background: var(--memory) !important;
 }
 .react-flow__handle.valid {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 45%, transparent) !important;
@@ -1087,5 +1091,103 @@ input, textarea, select {
   width: 13px;
   height: 13px;
   flex-shrink: 0;
+}
+
+/* Context Memory Node specific styles */
+.memory-upload-zone {
+  border: 1.5px dashed var(--line2);
+  border-radius: 8px;
+  padding: 14px 10px;
+  text-align: center;
+  background: var(--bg);
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--txt-dim);
+}
+.memory-upload-zone:hover {
+  border-color: var(--memory);
+  background: color-mix(in srgb, var(--memory) 4%, var(--bg));
+  color: var(--txt);
+}
+.memory-upload-zone svg {
+  color: var(--memory);
+}
+.memory-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+  margin-top: 8px;
+  padding-right: 2px;
+}
+.memory-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+.memory-file-item .name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--txt-dim);
+}
+.memory-file-item .size {
+  color: var(--txt-faint);
+  font-size: 9.5px;
+  font-family: var(--mono);
+}
+.memory-file-item .del {
+  color: var(--txt-faint);
+  cursor: pointer;
+  transition: color 0.12s;
+  display: flex;
+  align-items: center;
+}
+.memory-file-item .del:hover {
+  color: var(--err);
+}
+.memory-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s ease-in-out;
+  background: linear-gradient(180deg, #9333ea, #7e22ce);
+  color: #fff;
+  border: 1px solid #a855f7;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.25);
+  margin-top: 8px;
+}
+.memory-btn:hover {
+  filter: brightness(1.1);
+}
+.memory-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.memory-section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--memory);
+  font-weight: 600;
+  margin: 12px 0 4px;
 }
 

@@ -420,7 +420,7 @@ input,textarea{font-family:inherit}
         </div>
         <div class="pnode" data-add="not" style="--accent:var(--not)">
           <div class="ic">¬</div>
-          <div class="meta"><div class="t">NOT</div><div class="d">negative control</div></div>
+          <div class="meta"><div class="t">NOT</div><div class="d">explicit negation</div></div>
         </div>
       </div>
       <div class="legend">
@@ -585,7 +585,7 @@ const NODE_DEFS = {
 const GATE_DESC = {
   and:'Reads file → ranks A &amp; B by importance → merges in order.',
   or :'Reads file → compares A vs B → keeps the best fit for context.',
-  not:'Reads file → routes A into <b>negative</b> memory to suppress it.'
+  not:'Reads file → strips A and injects negative instructions to suppress A.'
 };
 
 /* ---------- global state ---------- */
@@ -1069,10 +1069,16 @@ async function compile(){
           log.push({n:'',t:'OR selected',d:`kept “${best}”${dropped.length?` · dropped “${dropped.join('”, “')}”`:''}`,c:'ok'});
         }
       } else if(g.type==='not'){
-        if(A){ mem.negative.push({text:A,by:'NOT'}); log.push({n:'',t:'NOT suppressed',d:A,c:'ok'}); }
+        if(A){
+          mem.positive = mem.positive.filter(p=>!hasTerm(p.text,A));
+          const negatedText = `avoid ${A}`;
+          const c=categorize(negatedText);
+          mem.positive.push({text:negatedText,...c,by:'NOT'});
+          log.push({n:'',t:'NOT suppressed',d:negatedText,c:'ok'});
+        }
       }
     }
-    log.push({n:2,t:'Semantic analysis',d:`${mem.positive.length} positive · ${mem.negative.length} negative`,c:'info'});
+    log.push({n:2,t:'Semantic analysis',d:`${mem.positive.length} prompt terms`,c:'info'});
 
     // ---- conflict resolution (rule-based) ----
     let removed=[];
@@ -1098,7 +1104,6 @@ async function compile(){
           const refined = await aiRefine(mem);
           if(refined){
             mem.positive = refined.positive;
-            if(refined.negative_additions) refined.negative_additions.forEach(t=>{ if(t&&!mem.negative.find(n=>n.text===t)) mem.negative.push({text:t,by:'AI'}); });
             aiUsed=true;
             log.push({n:'',t:'AI compiler pass',d:`${providerLabel()} re-ranked & de-conflicted`,c:'ai'});
           }
@@ -1116,13 +1121,12 @@ async function compile(){
     // ---- final compilation ----
     const kept = mem.positive.filter(p=>!p._drop);
     const positiveStr = kept.map(p=>p.text).join(', ');
-    const negativeStr = mem.negative.map(n=>n.text).join(', ');
     mem.context = kept.map(p=>p.text).join(' ');
     log.push({n:6,t:'Final compilation',d:`${kept.length} terms compiled`,c:'ok'});
 
     // write into file node (source of truth)
-    fileNode.data.compiled = { positive:positiveStr, negative:negativeStr, items:mem.positive, negItems:mem.negative };
-    state.lastCompile = { positive:positiveStr, negative:negativeStr, items:mem.positive, neg:mem.negative, log, aiUsed };
+    fileNode.data.compiled = { positive:positiveStr, negative:'', items:mem.positive, negItems:[] };
+    state.lastCompile = { positive:positiveStr, negative:'', items:mem.positive, neg:[], log, aiUsed };
     renderOutput(state.lastCompile);
     toast(aiUsed?`Compiled with ${providerLabel()} ✦`:'Compiled (rule-based)','ok');
   } finally {
@@ -1135,12 +1139,9 @@ const CAT_COLORS = { subject:'var(--not)',environment:'var(--file)',action:'#fb9
 function renderOutput(r){
   const kept = r.items.filter(p=>!p._drop);
   let h='';
-  // positive
-  h+=`<div class="osec"><div class="osec-h"><span class="sq" style="background:var(--ok)"></span>Positive prompt<button class="copybtn" data-copy="pos">copy</button></div>
+  // compiled prompt
+  h+=`<div class="osec"><div class="osec-h"><span class="sq" style="background:var(--ok)"></span>Compiled prompt<button class="copybtn" data-copy="pos">copy</button></div>
       <div class="obox pos${r.positive?'':' empty'}" id="posBox">${r.positive? escapeHtml(r.positive) : 'nothing yet'}</div></div>`;
-  // negative
-  h+=`<div class="osec"><div class="osec-h"><span class="sq" style="background:var(--not)"></span>Negative prompt<button class="copybtn" data-copy="neg">copy</button></div>
-      <div class="obox neg${r.negative?'':' empty'}" id="negBox">${r.negative? escapeHtml(r.negative) : 'none'}</div></div>`;
   // breakdown
   if(r.items.length){
     h+=`<div class="osec"><div class="osec-h"><span class="sq" style="background:var(--prompt)"></span>Compilation breakdown<span class="ct">${kept.length}/${r.items.length} kept</span></div><div class="breakdown">`;
@@ -1161,7 +1162,7 @@ function renderOutput(r){
   }
   output.innerHTML=h;
   output.querySelectorAll('[data-copy]').forEach(b=> b.onclick=()=>{
-    const txt = b.dataset.copy==='pos'? r.positive : r.negative;
+    const txt = r.positive;
     copy(txt); b.textContent='copied'; setTimeout(()=>b.textContent='copy',1200);
   });
 }
@@ -1226,10 +1227,9 @@ async function errText(res){
 /* AI refinement of the positive memory (one structured JSON call) */
 async function aiRefine(mem){
   if(!mem.positive.length) return null;
-  const system = `You are the semantic compiler inside a "Prompt Logic Gates" visual IDE. You receive prompt fragments that must be merged into ONE optimised generation prompt. Your job: (1) classify each fragment into exactly one category from [subject, environment, action, emotion, lighting, style, camera, effects, detail]; (2) give a priority 0-100 where foundational elements (subject 100, environment 90, action 80, emotion 70, lighting 60, style 50, camera 40, effects 30, detail 45) rank higher; (3) detect contradictions and mark the weaker fragment as dropped; (4) suggest extra negative-prompt terms that prevent the dropped/contradictory concepts. Respond with STRICT JSON only, no markdown, no commentary.`;
+  const system = `You are the semantic compiler inside a "Prompt Logic Gates" visual IDE. You receive prompt fragments that must be merged into ONE optimised generation prompt. Your job: (1) classify each fragment into exactly one category from [subject, environment, action, emotion, lighting, style, camera, effects, detail]; (2) give a priority 0-100 where foundational elements (subject 100, environment 90, action 80, emotion 70, lighting 60, style 50, camera 40, effects 30, detail 45) rank higher; (3) detect contradictions and mark the weaker fragment as dropped. Respond with STRICT JSON only, no markdown, no commentary.`;
   const list = mem.positive.map((p,i)=>`${i+1}. "${p.text}"`).join('\n');
-  const neg = mem.negative.map(n=>`"${n.text}"`).join(', ') || '(none)';
-  const user = `Positive fragments to compile:\n${list}\n\nExisting negative terms: ${neg}\n\nReturn JSON exactly in this shape:\n{"positive":[{"text":"...","category":"environment","priority":90,"keep":true}],"negative_additions":["..."]}\nInclude every fragment in "positive" (set "keep":false for ones that should be dropped due to conflict). Keep "text" identical to the input fragment.`;
+  const user = `Fragments to compile (including negation instructions like "avoid ..."):\n${list}\n\nReturn JSON exactly in this shape:\n{"positive":[{"text":"...","category":"environment","priority":90,"keep":true}]}\nInclude every fragment in "positive" (set "keep":false for ones that should be dropped due to conflict). Keep "text" identical to the input fragment.`;
   const raw = await callAI(system, user);
   const json = extractJson(raw);
   if(!json || !Array.isArray(json.positive)) throw new Error('bad AI JSON');
@@ -1240,7 +1240,7 @@ async function aiRefine(mem){
     by:'AI',
     _drop: (p.keep===false) ? 'AI: conflict' : undefined
   })).filter(p=>p.text);
-  return { positive, negative_additions:(json.negative_additions||[]).map(String) };
+  return { positive };
 }
 function extractJson(s){
   if(!s) return null;
@@ -1337,7 +1337,7 @@ document.getElementById('fileInput').onchange=(e)=>{
 document.getElementById('btnExportTxt').onclick=()=>{
   if(!state.lastCompile){ toast('Compile first, then export.','info'); return; }
   const fn=(state.nodes.find(n=>n.type==='fileNode')?.data?.filename)||'prompt.txt';
-  const body=`# Positive\n${state.lastCompile.positive||''}\n\n# Negative\n${state.lastCompile.negative||''}\n`;
+  const body=`# Compiled Prompt\n${state.lastCompile.positive||''}\n`;
   download(fn, body, 'text/plain');
   toast('Exported '+fn,'ok');
 };

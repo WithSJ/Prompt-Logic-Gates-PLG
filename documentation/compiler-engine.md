@@ -156,11 +156,11 @@ Return the merged prompt:
 
 ---
 
-### NOT Gate — Negation Routing
+### NOT Gate — Explicit Negation
 
-**System**: You are the AI compiler for a "NOT Gate" inside a visual prompt-building IDE. Your job is to read the current positive prompt baseline and a concept to suppress (A). You must: (1) strip any trace or reference of A from the positive prompt if it exists, (2) recommend negative prompt exclusions to keep A suppressed. Respond with STRICT JSON in this format: {"updated_positive": "The sanitized positive prompt", "negative_additions": ["list", "of", "negative", "terms"]}
+**System**: You are the AI compiler for a "NOT Gate" inside a visual prompt-building IDE. Your job is to read the current prompt baseline and a concept to suppress (A). You must: (1) strip any positive trace or reference of A from the prompt if it exists, (2) append a natural clause or instruction explicitly stating not to do, use, or include A and related concepts (e.g. "avoid A", "without A", "do not include A"). Respond with STRICT JSON in this format: {"updated_positive": "The sanitized prompt with explicit negation instructions built-in"}
 
-**Response**: JSON with `updated_positive` and `negative_additions` array.
+**Response**: JSON with `updated_positive` string field.
 
 ---
 
@@ -265,4 +265,39 @@ The PLG semantic compiler implements three Compilation Depth settings. These mod
     ```
 *   **Offline/Rule-Based Fallback**:
     Invokes `offlineDeepThinkingSpec`, which dynamically structures all visual parameters connected to the canvas into a visual specifications Markdown outline, listing each element under its technical category, and appending a detailed list of negative inhibitions to suppress.
+
+---
+
+## 8. Context Memory Compiler Gate
+
+The **Context Memory Compiler Gate** processes the compiled prompt state against the visual memory ledger. It guarantees that generated prompts are fully aligned with codebase conventions and casing constraints.
+
+### A. AI Invariant Prompt Constraints (AI Mode)
+When compiling a visual prompt graph with an active `contextMemory` connection in **AI Mode**, the compiler automatically appends a strict technical constraint instruction to the system prompt of downstream gates (including rephrasing engines in Thinking and DeepThinking modes):
+
+```text
+CRITICAL CONSTRAINT: You MUST preserve and exactly employ the casing, spelling, variables, and function names present in the following Context Memory. Do not translate, paraphrase or modify them:
+[Extracted Context Memory Ledger]
+```
+
+This prevents the LLM from translating camelCase or snake_case technical keys into natural-language terms.
+
+### B. Offline Lexical Casing Corrections
+In **Offline (Rule-based) Mode**, the compiler parses the Markdown memory ledger into a terms-to-rules map. For every variable signature, function, or entity hint extracted from the files:
+1.  It escapes regex meta-characters to form a strict word search.
+2.  It runs a case-insensitive search (`\b[escapedTerm]\b`, `gi`) across the compiled prompt baseline.
+3.  If a match is found, the compiler performs an **in-place lexical word swap** to restore the exact, case-sensitive variable casing defined in the memory ledger.
+
+### C. Semantic Rules Injection Formula
+If a matched memory term also includes a corresponding constraint rule or description, the compiler appends it as a parenthesized constraint at the very end of the baseline:
+
+$$\text{Prompt} = \text{Baseline Prompt} + \text{" (Memory Constraints: [[Term] rule: [Description]; ...])"}$$
+
+This ensures that rule-based compiles remain fully aligned with technical constraints and documentation instructions without requiring external API calls.
+
+### D. Context Memory Verification Check
+At the end of the compilation execution, a validation pass checks the fully compiled prompt against the extracted memory keywords:
+- **Green Stage (`✓ Checked and matched [N] exact memory term(s)`)**: Verified that at least one extracted variable, function signature, or technical key is present in the Compiled Prompt with exact case-sensitive spelling.
+- **Amber Stage (`⚠ Context Memory loaded but no exact terms matched`)**: Alerts the user that a memory bank is loaded, but the compiled prompt does not utilize any of the indexed variables or casing invariants. This guides developers in debugging spelling bugs before exporting.
+- **Grey Stage (`No Context Memory Node active`)**: Silent info card indicating no memory bank is connected to the canvas.
 

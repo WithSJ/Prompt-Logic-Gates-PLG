@@ -47,10 +47,7 @@ Step-by-step guides for building practical prompt circuits in the PLG IDE.
 
 ### Expected Output
 ```
-Positive: "ghost nurse standing at end of hallway, abandoned hospital corridor,
-           broken tiles, dim flickering fluorescent lights, PS1 graphics style,
-           low-poly textures"
-Negative: (none)
+Compiled Prompt: "ghost nurse standing at end of hallway, abandoned hospital corridor, broken tiles, dim flickering fluorescent lights, PS1 graphics style, low-poly textures"
 ```
 
 The terms are automatically sorted by category priority: Subject (100) → Environment (90) → Lighting (60) → Style (50).
@@ -115,11 +112,11 @@ Stage 3: OR Gate
 
 ### Result
 ```
-Positive: "dark medieval castle, stormy night sky"
-Negative: "bright sunny cheerful colors"
+Compiled Prompt: "dark medieval castle, stormy night sky (avoid bright sunny cheerful colors)"
 ```
 
-In AI mode, the NOT gate might also add related terms like "happy", "vibrant", "warm tones" to the negative prompt.
+In AI mode, the NOT gate might also append related terms or rephrase instructions to keep the suppressed concepts away, producing:
+`Compiled Prompt: "dark medieval castle, stormy night sky (avoid bright sunny cheerful colors, no vibrant warm tones)"`
 
 ---
 
@@ -221,17 +218,68 @@ Every change you make (moving nodes, editing text, adding connections) is automa
 3. The workspace replaces all current nodes and edges with the loaded graph.
 4. Edge colors and markers are automatically restored.
 
-### Exporting Compiled Prompts
+### Exporting Compiled Prompt
 1. Compile your graph first.
 2. Click **Export .txt** in the Inspector footer.
 3. A text file downloads containing:
-```
-# Compiled Positive Prompt
-<your positive prompt>
-
-# Compiled Negative Prompt
-<your negative prompt>
+```text
+# Compiled Prompt
+<your compiled prompt text>
 ```
 
 ### Creating a New Project
 Click **New** in the top bar. After confirmation, the workspace resets to the default seed template with pre-wired AND + NOT gates.
+
+---
+
+## Tutorial 7: Variable Alignment & Casing Safety (Context Memory)
+
+**Goal**: Ingest codebase schemas and variable guidelines to force the compiler to output exact, case-sensitive technical keywords, preventing spelling discrepancies.
+
+### Circuit Diagram
+```
+[File Node] ──file──▶ [AND Gate] ──file──▶ [Prompt File Viewer]
+                         ▲
+[Context Memory] ──mem───┘
+```
+
+### Steps
+
+1. **Add a File Node**: Drag "File Node" onto the canvas and name it `codebase_prompt.txt`.
+2. **Add a Prompt Box**: Create a prompt box and type:
+   `write a function that retrieves a user object using fetch_data and updates userId in local storage`
+   *Note: Type some keywords with loose casing or typos, e.g., "FETCH_DATA" or "USERID".*
+3. **Add a Context Memory Node**: Drag the `Context Memory` card from the left palette.
+4. **Load Files**: Click the dashed upload zone on the Context Memory node (or drag and drop files from your desktop). Load a `.json` schema or code file.
+   *Example loaded buffer contents (`config.json`):*
+   ```json
+   {
+     "userId": "string",
+     "fetch_data": "function"
+   }
+   ```
+5. **Build Memory**: Click the purple **Build Context Memory** button on the node. The offline multi-casing parser crawls the buffer and populates the **Context Memory Preview** textarea with the structured Markdown ledger:
+   ```markdown
+   # 🧠 MEMPALACE-STYLE CONTEXT LEDGER
+   ## 💻 Code Signatures, Variables & Database Schemas
+   - **`userId`**: camelCase Variable
+   - **`fetch_data(id)`**: Function Signature
+   ```
+6. **Add an AND Gate**: Drag an AND Gate to the canvas.
+7. **Wire the memory circuit**:
+   - File Node → AND Gate (file handle)
+   - Prompt Box → AND Gate (input A)
+   - Context Memory (purple output pin) → AND Gate (purple input memory pin)
+8. **Add File Viewer**: Connect AND Gate file output to the Prompt File Viewer.
+9. **Compile**: Click the blue **Compile** button in the top bar.
+
+### Expected Output
+```text
+Compiled Prompt: "write a function that retrieves a user object using fetch_data and updates userId in local storage (Memory Constraints: [[userId] rule: camelCase Variable; [fetch_data] rule: Function Signature])"
+```
+
+### What Happened
+The compiler matched the loosely-typed `fetch_data` and `userId` keywords inside your prompt fragment against the memory ledger. 
+- In **Offline Mode**, it performed an in-place lexical word swap, correcting `FETCH_DATA` to `fetch_data` and `USERID` to `userId`, and appended the explicit constraints at the end.
+- In **AI Mode**, it fed the entire memory ledger as a system constraint block to the LLM, instructing it to strictly preserve casing.
+- The **Pipeline Debugger** stage "Context Memory Verification" will show a green checkmark `✓ Checked and matched 2 exact memory term(s)`.

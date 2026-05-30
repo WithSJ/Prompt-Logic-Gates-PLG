@@ -1,6 +1,6 @@
 ---
 category: wiki-concept
-updated: 2026-05-29
+updated: 2026-05-30
 tags: [plg, architecture, compiler, react-flow]
 ---
 
@@ -97,8 +97,8 @@ graph TD
 
 ### State Variables & Trace Propagation
 *   `gateStates`: An object dictionary mapping each visual Node ID to its resulting baseline state:
-    `gateStates[nodeId] = { positive: "...", negative: "...", prompt_val: "..." }`
-*   `activePositive` / `activeNegative`: Traced dynamically along input file pins on each step using `getFileInput(nodes, edges, gateId, gateStates)`:
+    `gateStates[nodeId] = { positive: "...", prompt_val: "..." }`
+*   `activePositive`: Traced dynamically along input file pins on each step using `getFileInput(nodes, edges, gateId, gateStates)`:
     - If connected to `fileNode`, baseline variables initialize to empty strings.
     - If connected to an upstream gate, it retrieves that gate's recorded value from the `gateStates` dictionary.
 
