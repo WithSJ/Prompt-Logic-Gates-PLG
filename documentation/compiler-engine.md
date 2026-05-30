@@ -12,41 +12,117 @@ Source file: [semanticCompiler.js](file:///c:/Users/jadam/Desktop/PLG/src/compil
 
 ---
 
-## 1. The Multi-Domain Categorization System
+## 1. How Prompt Priorities Work
 
-Every prompt fragment is categorized into one of 9 semantic dimensions. Unlike single-domain compilers, the Prompt Logic Gates (PLG) compiler implements a **Multi-Domain Prompt Priority Schema** governed by the **Priority Manager**. Depending on the target domain, the priority weights and keyword lists change dynamically to construct optimal prompts for various LLM and generative tasks.
+In prompt engineering, generative AI models (like Large Language Models and image generation networks) pay the most attention to tokens placed at the **beginning** of a prompt. To maximize execution accuracy, Prompt Logic Gates (PLG) uses a **Priority-Based Sorting System**:
 
-### The 5 Core Compilation Domains
-
-The compiler supports five distinct execution domains. When a domain is selected, the corresponding category priorities and keywords are loaded:
-
-1.  **Image Generation (`image`)**: (P=100) Subject ➔ (P=90) Environment ➔ (P=80) Action ➔ (P=70) Emotion ➔ (P=60) Lighting ➔ (P=50) Style ➔ (P=45) Detail ➔ (P=40) Camera ➔ (P=30) Effects.
-2.  **Code Generation & Programming (`code`)**: (P=100) Language & Env ➔ (P=95) Core Functionality ➔ (P=85) I/O & Structure ➔ (P=75) Performance Rules ➔ (P=65) Coding Standards ➔ (P=55) Edge Cases ➔ (P=45) Libraries ➔ (P=35) Testing ➔ (P=25) Docs.
-3.  **Bug Finding & Debugging (`debug`)**: (P=100) Error Stacktrace ➔ (P=95) Failing Code ➔ (P=85) Expected Output ➔ (P=80) Actual Behavior ➔ (P=70) Env State ➔ (P=60) Recent Changes ➔ (P=50) Attempted Fixes ➔ (P=40) Logs ➔ (P=30) Constraints.
-4.  **Software Architecture & System Design (`architecture`)**: (P=100) Scale & Goals ➔ (P=90) Arch Pattern ➔ (P=80) Storage ➔ (P=70) Tech Stack ➔ (P=60) Quality Attributes ➔ (P=50) Protocols ➔ (P=40) Security ➔ (P=30) DevOps ➔ (P=20) Budget.
-5.  **GUI & UI/UX Layout (`gui`)**: (P=100) Layout & Grid ➔ (P=90) UI Components ➔ (P=80) Theme & Palette ➔ (P=70) Typography ➔ (P=60) Transitions ➔ (P=50) Framework ➔ (P=40) Accessibility ➔ (P=30) Spacing ➔ (P=20) Assets.
-
-For detailed keyword mappings and priority weights, see [wiki/priority_manager.md](file:///c:/Users/jadam/Desktop/PLG/wiki/priority_manager.md).
+1.  **Categorization**: The compiler analyzes each prompt fragment (keyword or text pin) and matches it against keyword catalogs to classify it into one of 9 custom dimensions (e.g. `subject`, `style`, `lighting`, or `failing_code`).
+2.  **Numerical Weighting**: Each of the 9 dimensions carries a numerical **Priority Weight** (ranging from `20` to `100`).
+3.  **Topological Sorting & Ordering**: During the final compilation stage, the compiler sorts all connected prompt components according to their priority weights (highest priority first, lowest priority last). This guarantees that essential foundational context (like language restrictions or image subjects) appears at the start of the prompt, while superficial modifiers (like file formats or camera details) appear at the end.
+4.  **Scoring Contribution**: The priority value is normalized and fed into the compiler's semantic scoring equation to resolve competing candidates (such as in an OR gate decision):
+    $$\text{Score} = (\text{Overlap Tokens} \times 2) + \text{Category Affinity} + \left(\frac{\text{Priority}}{100}\right) - \text{Conflicts Penalty}$$
 
 ---
 
-## 2. Dynamic Priority Manager
+## 2. What is the Priority Manager?
 
-The **Priority Manager** sits inside the compilation pipeline. It analyzes the canvas node graph and input texts to determine the target domain, then dynamically swaps the active sorting and conflict resolution dictionaries.
+The **Priority Manager** (`PriorityManager`) is the compiler component responsible for making the sorting engine dynamic. Instead of enforcing a single, hardcoded image prompt priority hierarchy on every compilation cycle, it dynamically **detects the compilation domain** of the canvas circuit and loads the appropriate priority weights.
 
-### Classification Pathways (Hybrid Model)
+### The Hybrid Classification Engine
 
-The classifier operates in two modes corresponding to the user's active **Compiler Mode** setting:
+To detect the target domain, the Priority Manager implements two execution pathways based on the active **Compiler Mode**:
 
-*   **Offline Classification (Normal)**: Runs a fast, regex-based keyword density crawler across all inputs. It counts occurrences of specific domain-identifying tokens (e.g. matching code syntaxes `def`/`class`/`typescript` vs error labels `TypeError`/`stacktrace`/`crash`). The domain with the highest scoring matches is loaded.
-*   **AI Classification (Thinking / DeepThinking)**: In active AI modes, the compiler executes a structured JSON categorization call to the configured LLM endpoint:
+*   **Offline Mode (Normal)**: Executes a lightweight lexical crawler. It scans all connected prompt boxes and input file text nodes, running regex counts against key vocabulary lists:
+    *   *Code Vocabulary*: matches syntax tags like `function`, `import`, `class`, `typescript`, `rust`, etc.
+    *   *Debug Vocabulary*: matches error hooks like `TypeError`, `Exception`, `stacktrace`, `crash`, `actual behavior`, etc.
+    *   *Architecture Vocabulary*: matches layout concepts like `microservices`, `K8s`, `high availability`, `PostgreSQL`, etc.
+    *   *GUI Vocabulary*: matches style grid indicators like `navbar`, `flexbox`, `grid`, `CSS theme`, `padding`, `margin`, etc.
+    *   *Image Vocabulary (Fallback)*: matches visuals like `photorealistic`, `volumetric`, `lighting`, `render`, `oil painting`, etc.
+    The domain scoring the highest total keyword overlap is dynamically loaded.
+*   **AI Mode (Thinking / DeepThinking)**: Submits the consolidated prompt fragments to the active LLM provider using a structured system classifier prompt. The LLM evaluates the context and returns a JSON category routing directive:
     ```json
-    {"domain": "image" | "code" | "debug" | "architecture" | "gui", "reason": "Classification brief"}
+    {
+      "domain": "image" | "code" | "debug" | "architecture" | "gui",
+      "reason": "Explain why this domain matches the visual circuit context"
+    }
     ```
 
+Once classified, the Priority Manager overrides the compiler's sorting arrays and weights with the target domain's ruleset.
+
 ---
 
-## 3. Conflict Matrix
+## 3. Active Priorities Present Right Now
+
+The PLG engine actively supports five core compilation domains, each equipped with its own 9-dimensional priority weights:
+
+### A. Image Generation Domain (`image`)
+Enforces character definitions and settings first, followed by visual styling, lighting, camera angles, and render details.
+
+*   `subject` (Priority = 100): Core character, person, entity, or object focus.
+*   `environment` (Priority = 90): Location, background context, or landscape.
+*   `action` (Priority = 80): Physical movements, poses, or subject states.
+*   `emotion` (Priority = 70): Mood, emotional profile, or overall atmospheric tension.
+*   `lighting` (Priority = 60): Illumination characteristics (neon, candles, moonlight).
+*   `style` (Priority = 50): Art medium, rendering engine, or aesthetic format (PS1, low poly, realistic).
+*   `detail` (Priority = 45): Fallback general enhancement modifiers.
+*   `camera` (Priority = 40): Camera lenses, shooting angles, or framing (POV, close-up).
+*   `effects` (Priority = 30): Post-processing features (vignette, film grain, glitch).
+
+### B. Code Generation & Programming Domain (`domain: code`)
+Ensures compile environments and core functionality are defined at the start of the prompt so coding LLMs conform to syntax rules.
+
+*   `lang_env` (Priority = 100): Programming languages, compilers, runtimes, and versions (Rust, Node, React 18).
+*   `functionality` (Priority = 95): Target algorithmic functions, core logic, routes, or class behaviors.
+*   `io_structure` (Priority = 85): Input parameters, return types, JSON schemas, or DB payloads.
+*   `constraints` (Priority = 75): Performance thresholds, memory limits, time complexity, or zero-dependency rules.
+*   `standards` (Priority = 65): Design principles, modularity rules, formatting styles (SOLID, DRY, OOP).
+*   `edge_cases` (Priority = 55): Handling null values, timeouts, exceptions, or boundary limits.
+*   `libraries` (Priority = 45): Third-party utilities and modules (axios, express, pandas).
+*   `testing` (Priority = 35): Testing suites, unit test generation guidelines (jest, pytest, mock).
+*   `documentation` (Priority = 25): Document structures, JSDocs, comments, and readme briefs.
+
+### C. Bug Finding & Debugging Domain (`domain: debug`)
+Places immediate error messages and failing code blocks first to ground the LLM's diagnostic context before evaluating logs or environment states.
+
+*   `error_stack` (Priority = 100): Strict error messages, exception types, and exact stack traces.
+*   `failing_code` (Priority = 95): Broken snippet, file name, line coordinates, or failing function.
+*   `expected` (Priority = 85): Target expectations, desired outputs, or standard behavior.
+*   `actual` (Priority = 80): Current buggy outputs, incorrect state transitions, or crashing behaviors.
+*   `env_state` (Priority = 70): Runtime conditions, OS versions, web tool logs, or package parameters.
+*   `recent_changes` (Priority = 60): Recent code commits, git diffs, or newly installed dependencies.
+*   `attempts` (Priority = 50): Solutions already tried by the developer.
+*   `logs` (Priority = 40): Console logs, network payload listings, or database query dumps.
+*   `constraints` (Priority = 30): Resolution constraints (e.g. hotfix-only, avoid breaking changes).
+
+### D. Software Architecture & System Design Domain (`domain: architecture`)
+Prioritizes high-level system requirements and scale constraints over implementation technologies.
+
+*   `goals_scale` (Priority = 100): Scale (10M DAU), latency parameters, uptime requirements, or core targets.
+*   `patterns` (Priority = 90): System design architecture patterns (microservices, monolithic, MVC).
+*   `data_storage` (Priority = 80): Databases, caching engines, replication, and indexing rules (Postgres, Redis).
+*   `platforms` (Priority = 70): Hosting environments, cloud platforms, and container systems (AWS, Kubernetes).
+*   `quality_attr` (Priority = 60): Non-functional attributes (scalability, extensibility, maintainability).
+*   `protocols` (Priority = 50): Connection guidelines, message brokers, and API standards (REST, gRPC, Kafka).
+*   `security` (Priority = 40): Identity setups, encryption, rules, regulations, and access scopes (OAuth, JWT).
+*   `devops` (Priority = 30): Delivery setups, pipelines, tracking, and logs (GitHub Actions, Prometheus).
+*   `cost` (Priority = 20): Monthly budget limits, server limitations, or cost-minimization goals.
+
+### E. GUI & UI/UX Design Domain (`domain: gui`)
+Focuses on layouts, components, and brand tokens before choosing frameworks or applying styling utilities.
+
+*   `layout` (Priority = 100): Screen sizes (desktop, mobile), layouts, responsive frameworks, and alignment grids.
+*   `components` (Priority = 90): Essential visual components (cards, headers, sidebars, modal windows).
+*   `theme` (Priority = 80): Style palettes, lighting themes (dark mode), gradients, and brand visual guidelines.
+*   `typography` (Priority = 70): Text settings, standard typography choices (Inter), headings, and visual scaling.
+*   `interactions` (Priority = 60): Hover states, click transformations, page loaders, and active button behaviors.
+*   `framework` (Priority = 50): Styling systems and styling libraries (Tailwind, pure Vanilla CSS, React Flow).
+*   `a11y` (Priority = 40): Accessibility specifications, alt labels, contrast checks, and keyboard mappings.
+*   `spacing` (Priority = 30): Inner spacings, margins, gaps, border values, and visual alignments.
+*   `assets` (Priority = 20): Graphic icons, logos, graphic files, or placeholder references.
+
+---
+
+## 4. Conflict Matrix
 
 The compiler checks for semantically contradictory terms. Each conflict pair is defined explicitly:
 
