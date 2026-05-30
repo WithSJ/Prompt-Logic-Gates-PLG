@@ -39,17 +39,15 @@ When the user triggers "Compile", the compiler engine inside [semanticCompiler.j
 ### Phase 1: Topological Sort (DFS Sorter)
 The compiler builds a directed acyclic graph (DAG) representation of your logical circuit by tracing edge connections. It executes a Depth-First Search (DFS) topological sort starting from target pins (`file`, `a`, `b`, `questions`), ensuring that all upstream variables are computed before compiling downstream nodes.
 
-### Phase 2: Category Parsing
-Prompt text fragments are evaluated against keyword dictionaries to classify them under one of nine semantic categories. Each category carries a distinct priority rating:
-1. `subject` (Priority = 100)
-2. `environment` (Priority = 90)
-3. `action` (Priority = 80)
-4. `emotion` (Priority = 70)
-5. `lighting` (Priority = 60)
-6. `style` (Priority = 50)
-7. `detail` (Priority = 45)
-8. `camera` (Priority = 40)
-9. `effects` (Priority = 30)
+### Phase 2: Dynamic Category Parsing (Priority Manager)
+Prompt text fragments are evaluated against keyword dictionaries. Unlike single-domain engines, a dynamic **Priority Manager** detects the target compilation domain (e.g. `image`, `code`, `debug`, `architecture`, `gui`) and loads its specific 9-dimensional priority mapping. 
+
+For instance:
+*   **Image Generation**: Ranks `subject` (100) ➔ `environment` (90) ➔ `style` (50) ➔ `effects` (30).
+*   **Code Generation**: Ranks `lang_env` (100) ➔ `functionality` (95) ➔ `constraints` (75) ➔ `testing` (35).
+*   **Bug Finding**: Ranks `error_stack` (100) ➔ `failing_code` (95) ➔ `expected` (85) ➔ `logs` (40).
+
+The active domain is classified either **offline** (regex-based keyword matching) or **via AI** (LLM JSON classifier) depending on the active compiler setting. See [wiki/priority_manager.md](../priority_manager.md) for details.
 
 ### Phase 3: Conflict Overlap Scoring & Overrides
 To prevent conflicting prompt instructions (e.g., commanding both a "realistic" photo and a "cartoon" drawing), the engine maps text against a static `CONFLICTS` matrix:

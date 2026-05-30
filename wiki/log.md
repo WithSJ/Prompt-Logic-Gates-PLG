@@ -4,6 +4,14 @@ This is an append-only chronological ledger tracking major engineering steps, re
 
 ---
 
+## [2026-05-30] design | Design Multi-Domain Prompt Priority Schema & Priority Manager
+- **Action**: Conceived and specified a multi-domain dynamic sorting architecture for the semantic compiler, introducing specialized prompt priority dimensions for Programming, Debugging, System Architecture, and GUI layout tasks.
+- **Details**:
+  - **Dynamic Multi-Domain Schema**: Researched and established 9-dimensional priority weights and core keyword mappings for five key prompt domains (`image`, `code`, `debug`, `architecture`, `gui`).
+  - **Priority Manager Specification**: Designed the system architecture for a dynamic `PriorityManager` routing engine capable of switching priority catalogs on the fly.
+  - **Dual-Pathway Classifier**: Defined a hybrid classification pipeline which performs fast offline rule-based keyword matching when executing in Normal mode, and switches to a structured LLM system classifier in Thinking or DeepThinking AI modes.
+  - **Wiki Integration**: Formulated [wiki/priority_manager.md](priority_manager.md) and connected it to Obsidian graph hubs and catalog indices.
+
 ## [2026-05-30] design | Create Comprehensive Developer & LLM Agent Documentation Suite
 - **Action**: Conceived and created a complete developer documentation directory containing structured markdown files covering quickstart setups, Vanilla CSS and state rules, and copy-pasteable AI prompts to automate logs, wikis, and indices.
 - **Details**:

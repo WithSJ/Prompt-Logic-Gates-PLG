@@ -17,6 +17,7 @@ Welcome to the **Prompt Logic Gates (PLG)** internal knowledge base. This wiki s
 *   [[Architecture](architecture.md)] - In-depth guide to the core React Flow layout, node state binders, stage tracing, topological sorting algorithms, and reactive sync states.
 *   [[Nodes Reference](nodes.md)] - Complete API-grade layout documentation of all visual flow node elements, data bindings, execution logic, and port handle definitions.
 *   [[Compiler Engine](compiler.md)] - Detailed specifications of the semantic parsing rules, categorical term dictionaries, overlap scoring formulas, baseline conflicts, and LLM gate prompts.
+*   [[Priority Manager](priority_manager.md)] - Conceptual design of the multi-domain priority router and domain-specific classification schema.
 
 ---
 

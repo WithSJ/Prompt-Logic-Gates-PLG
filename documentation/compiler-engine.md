@@ -12,47 +12,41 @@ Source file: [semanticCompiler.js](file:///c:/Users/jadam/Desktop/PLG/src/compil
 
 ---
 
-## 1. The Categorization System
+## 1. The Multi-Domain Categorization System
 
-Every prompt fragment is categorized into one of 9 semantic dimensions. Each category carries a **priority weight** that determines ordering in the final prompt — higher priority terms appear first.
+Every prompt fragment is categorized into one of 9 semantic dimensions. Unlike single-domain compilers, the Prompt Logic Gates (PLG) compiler implements a **Multi-Domain Prompt Priority Schema** governed by the **Priority Manager**. Depending on the target domain, the priority weights and keyword lists change dynamically to construct optimal prompts for various LLM and generative tasks.
 
-### Category Dictionary
+### The 5 Core Compilation Domains
 
-| # | Category | Priority | Keywords |
-| :--- | :--- | :--- | :--- |
-| 1 | **Subject** | 100 | man, woman, person, people, character, figure, girl, boy, child, ghost, nurse, creature, monster, demon, spirit, animal, dog, cat, soldier, priest, father, daughter, robot, zombie, skeleton, witch, beast, entity, protagonist, villain, face, portrait |
-| 2 | **Environment** | 90 | hospital, forest, room, factory, city, street, house, building, dungeon, cave, school, office, church, temple, abandoned, ruins, landscape, mountain, desert, ocean, sea, village, town, corridor, hallway, basement, attic, warehouse, laboratory, swamp, jungle, interior, exterior, background, setting, environment |
-| 3 | **Action** | 80 | running, walking, standing, sitting, screaming, crying, attacking, holding, fighting, jumping, falling, crawling, hiding, chasing, floating, flying, reaching, looking, staring, praying, dancing, reading, sleeping, dying, bleeding |
-| 4 | **Emotion** | 70 | scary, terrifying, eerie, creepy, dread, horror, horrific, ominous, unsettling, frightening, tense, melancholic, sad, happy, joyful, peaceful, calm, angry, lonely, hopeless, disturbing, nightmarish, sinister, mood, atmosphere, atmospheric |
-| 5 | **Lighting** | 60 | dark, darkness, bright, dim, neon, candlelight, moonlight, sunlight, backlit, fog, foggy, mist, shadow, shadows, glow, glowing, flickering, spotlight, rim light, volumetric, silhouette, overcast, dusk, dawn, night, day, lighting |
-| 6 | **Style** | 50 | ps1, ps2, realistic, photorealistic, cartoon, anime, toon, painterly, cinematic, 3d, 3d render, render, pixel, pixel art, low poly, retro, vintage, noir, watercolor, oil painting, sketch, comic, manga, hyperrealistic, stylized, grunge, vfx, analog, found footage, style, aesthetic |
-| 7 | **Detail** | 45 | *(No keywords — fallback category for unrecognized terms)* |
-| 8 | **Camera** | 40 | close-up, closeup, wide shot, wide angle, first-person, first person, third-person, top-down, bird, fisheye, depth of field, bokeh, macro, panorama, dutch angle, low angle, high angle, tracking shot, pov, shot, lens, 35mm, 50mm, 85mm |
-| 9 | **Effects** | 30 | grain, film grain, blur, motion blur, particles, vignette, chromatic aberration, glitch, lens flare, dust, smoke, sparks, rain, snow, scanlines, noise, distortion, vfx, effect, effects, bloom |
+The compiler supports five distinct execution domains. When a domain is selected, the corresponding category priorities and keywords are loaded:
 
-### How Categorization Works
+1.  **Image Generation (`image`)**: (P=100) Subject ➔ (P=90) Environment ➔ (P=80) Action ➔ (P=70) Emotion ➔ (P=60) Lighting ➔ (P=50) Style ➔ (P=45) Detail ➔ (P=40) Camera ➔ (P=30) Effects.
+2.  **Code Generation & Programming (`code`)**: (P=100) Language & Env ➔ (P=95) Core Functionality ➔ (P=85) I/O & Structure ➔ (P=75) Performance Rules ➔ (P=65) Coding Standards ➔ (P=55) Edge Cases ➔ (P=45) Libraries ➔ (P=35) Testing ➔ (P=25) Docs.
+3.  **Bug Finding & Debugging (`debug`)**: (P=100) Error Stacktrace ➔ (P=95) Failing Code ➔ (P=85) Expected Output ➔ (P=80) Actual Behavior ➔ (P=70) Env State ➔ (P=60) Recent Changes ➔ (P=50) Attempted Fixes ➔ (P=40) Logs ➔ (P=30) Constraints.
+4.  **Software Architecture & System Design (`architecture`)**: (P=100) Scale & Goals ➔ (P=90) Arch Pattern ➔ (P=80) Storage ➔ (P=70) Tech Stack ➔ (P=60) Quality Attributes ➔ (P=50) Protocols ➔ (P=40) Security ➔ (P=30) DevOps ➔ (P=20) Budget.
+5.  **GUI & UI/UX Layout (`gui`)**: (P=100) Layout & Grid ➔ (P=90) UI Components ➔ (P=80) Theme & Palette ➔ (P=70) Typography ➔ (P=60) Transitions ➔ (P=50) Framework ➔ (P=40) Accessibility ➔ (P=30) Spacing ➔ (P=20) Assets.
 
-```javascript
-function categorize(text) {
-  // For each category, count how many keywords appear in the text
-  // The category with the most keyword hits wins
-  // Ties broken by higher priority
-  // If no keywords match, falls back to "detail" (priority 45)
-}
-```
-
-**Example**: `"abandoned hospital, dark hallway, eerie atmosphere"`
-- "abandoned" → Environment (1 hit)
-- "hospital" → Environment (2 hits)
-- "dark" → Lighting (1 hit)
-- "hallway" → Environment (3 hits)
-- "eerie" → Emotion (1 hit)
-- "atmosphere" → Emotion (2 hits)
-- **Winner**: Environment (3 hits, priority 90)
+For detailed keyword mappings and priority weights, see [wiki/priority_manager.md](file:///c:/Users/jadam/Desktop/PLG/wiki/priority_manager.md).
 
 ---
 
-## 2. Conflict Matrix
+## 2. Dynamic Priority Manager
+
+The **Priority Manager** sits inside the compilation pipeline. It analyzes the canvas node graph and input texts to determine the target domain, then dynamically swaps the active sorting and conflict resolution dictionaries.
+
+### Classification Pathways (Hybrid Model)
+
+The classifier operates in two modes corresponding to the user's active **Compiler Mode** setting:
+
+*   **Offline Classification (Normal)**: Runs a fast, regex-based keyword density crawler across all inputs. It counts occurrences of specific domain-identifying tokens (e.g. matching code syntaxes `def`/`class`/`typescript` vs error labels `TypeError`/`stacktrace`/`crash`). The domain with the highest scoring matches is loaded.
+*   **AI Classification (Thinking / DeepThinking)**: In active AI modes, the compiler executes a structured JSON categorization call to the configured LLM endpoint:
+    ```json
+    {"domain": "image" | "code" | "debug" | "architecture" | "gui", "reason": "Classification brief"}
+    ```
+
+---
+
+## 3. Conflict Matrix
 
 The compiler checks for semantically contradictory terms. Each conflict pair is defined explicitly:
 
