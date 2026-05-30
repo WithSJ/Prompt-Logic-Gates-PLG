@@ -4,6 +4,15 @@ This is an append-only chronological ledger tracking major engineering steps, re
 
 ---
 
+## [2026-05-30] design | Create Comprehensive Developer & LLM Agent Documentation Suite
+- **Action**: Conceived and created a complete developer documentation directory containing structured markdown files covering quickstart setups, Vanilla CSS and state rules, and copy-pasteable AI prompts to automate logs, wikis, and indices.
+- **Details**:
+  - **Decoupled Folder Structure**: Created a dedicated `documentation/development/` directory containing three rich markdown files:
+    - [setup.md](../documentation/development/setup.md): Complete setup guide mapping prerequisites (Node.js v18+), package installs (`npm install`), Vite dev server setups (`npm run dev`), and compiled production bundles (`npm run build`).
+    - [standards.md](../documentation/development/standards.md): Outlines pure Vanilla CSS styling variables (no Tailwind), React Flow parent-state callbacks, topological DFS sorting, and static conflict override matrices.
+    - [llm-automation.md](../documentation/development/llm-automation.md): Explains ingest, refine, lint, and design protocols from [AGENTS.md](../AGENTS.md), and provides a copy-pasteable AI system prompt template to allow LLMs to auto-compile logs and index links.
+  - **Catalogs Updated**: Integrated references to the new markdown suite in [wiki/index.md](index.md) and the root repository [README.md](../README.md) to assist new contributors and LLM agents.
+
 ## [2026-05-30] design | Implement Editable Workspace Name & Integrated Filename Synchronization
 - **Action**: Conceived and integrated an editable **Workspace Name** control directly in the IDE Topbar, creating an automated two-way synchronization loop that governs all downloaded `.json` graph configurations and exported `.txt` prompt briefs, with automated space-to-underscore sanitization.
 - **Details**:

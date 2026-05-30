@@ -46,3 +46,7 @@ A comprehensive 10-page documentation suite is available in the `documentation/`
 *   [[API & AI Integration](../documentation/api-and-ai-integration.md)] - Multi-provider configuration and CORS proxy.
 *   [[Project Structure](../documentation/project-structure.md)] - File tree and code architecture.
 *   [[Design System](../documentation/design-system.md)] - CSS tokens, colors, typography, and component styling.
+*   [[Developer Setup](../documentation/development/setup.md)] - Local environment installation, prerequisites, cloning, and running the Vite server.
+*   [[Coding Standards](../documentation/development/standards.md)] - Pure-CSS guidelines, custom HSL theme tokens, React Flow bindings, and compiler sorting algorithms.
+*   [[LLM Agent Automation](../documentation/development/llm-automation.md)] - Ingest/refine ledger logging protocols and copy-pasteable prompts to auto-document features using AI.
+

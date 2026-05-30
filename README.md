@@ -94,9 +94,16 @@ Make sure you have [Node.js](https://nodejs.org/) (v18+) installed.
 
 ---
 
-## 🤝 Contributing
+## 🤝 Contributing & Developer Guidelines
 
-Contributions to the Prompt Logic Gates IDE are highly appreciated! Please consult `AGENTS.md` for guidelines if you are using AI agents to modify the wiki or visual logic compilers, and feel free to open PRs or issues.
+Contributions to the Prompt Logic Gates IDE are highly appreciated! 
+
+To assist new contributors and developers, we have established a dedicated **Developer Documentation** suite:
+- **🛠️ Setup & Running Locally**: Follow the step-by-step installation and Vite dev server guides in [documentation/development/setup.md](documentation/development/setup.md).
+- **📏 Coding Standards & Rules**: Review pure Vanilla CSS classes, React Flow canvas synchronization, and topological compiler specifications in [documentation/development/standards.md](documentation/development/standards.md).
+- **🤖 LLM Agent Auto-Maintenance**: Learn how to use AI coding assistants to automatically update index catalogs and chronological log ledgers in [documentation/development/llm-automation.md](documentation/development/llm-automation.md).
+
+If you are using AI agents (like Gemini, Claude, or ChatGPT) to modify the codebase, please instruct them to read [AGENTS.md](AGENTS.md) first. It specifies strict logging formats and entry schemas to keep the repository documentation pristine and automated!
 
 ---
 
