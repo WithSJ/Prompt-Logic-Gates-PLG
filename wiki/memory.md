@@ -99,20 +99,41 @@ In offline mode, the compiler parses the Markdown memory ledger into a key-value
 
 ---
 
-## 🔌 4. Handle Routing & Topological Sort
+## 🔌 4. Global Memory Routing & Aggregation
 
-Topological execution sorting (`buildExecutionOrder` in `semanticCompiler.js`) traces `Context Memory` connections. If the `Context Memory` node's left target handle is linked to an upstream gate or file baseline stream:
-1.  The compiler executes all upstream file-compiling gates first.
-2.  The compiled baseline prompt flows into the memory gate.
-3.  The memory gate intercepts the prompt stream, executes the **AI Prompt Alignment** or **Rule-Based Expansion**, and outputs the beautifully aligned baseline downstream to the final file viewer or downstream compiling gates.
+Context Memory is designed as a **floating global memory bank**. Unlike typical logic operators, Context Memory nodes **do not require physical edge wiring or pin connections** to gates.
+
+### A. Independent Toggle Switches (On/Off Controls)
+Each Context Memory node placed on the canvas is fully independent and is equipped with a visual glassmorphic **Active / Inactive** toggle switch. 
+*   **Active (✓ ENABLED)**: The node's compiled HSL ledger is read and integrated during prompt generation.
+*   **Inactive (✗ DISABLED)**: The node is temporarily bypassed. Its ledger text is ignored during compile cycles, and the node's visual style is greyed out.
+
+### B. Global Aggregation Formula
+During a compilation run, the compiler scans the canvas and locates **all active, enabled Context Memory nodes**. It reads the extracted markdown ledgers from each enabled bank, filtering out empty ones, and merges them into a single consolidated context ledger using a double newline separator:
+
+$$\text{Global Memory Content} = \bigcup_{\text{enabled } i} \text{Ledger}_i$$
+
+This allows prompt engineers to load multiple independent libraries (e.g. one node containing `api-signatures.js`, another containing `css-tokens.css`, and a third containing `general-invariants.md`), toggling them on and off individually as needed.
+
+### C. Visual Layout
+The global nodes float independently on the React Flow workspace, and are read automatically by compiling gates, removing edge clutter:
 
 ```mermaid
-graph LR
-    FileNode["File Node (prompt.txt)"] -- file --> ContextMemory["🧠 Context Memory Node"]
-    PromptBox["Prompt Box ('user data')"] -- prompt --> AND["AND Gate"]
-    ContextMemory -- memory --> AND
-    AND -- file --> FileViewer["👁 Prompt File Viewer"]
-    style ContextMemory fill:#f3e8ff,stroke:#c084fc,stroke-width:2px;
+graph TD
+    subgraph Global Memory Banks
+        CM1["🧠 Context Memory A (Active)"]
+        CM2["🧠 Context Memory B (Inactive)"]
+        style CM1 fill:#f3e8ff,stroke:#c084fc,stroke-width:2.5px;
+        style CM2 fill:#19232e,stroke:#5c6f7e,stroke-width:1px,stroke-dasharray: 4;
+    end
+
+    subgraph Wired Prompt Circuit
+        FileNode["File Node (prompt.txt)"] -- file --> AND["AND Gate"]
+        PromptBox["Prompt Box ('retrieve data')"] -- prompt --> AND
+        AND -- file --> FileViewer["👁 Prompt File Viewer"]
+    end
+
+    CM1 -. global read on compile .-> AND
 ```
 
 ---

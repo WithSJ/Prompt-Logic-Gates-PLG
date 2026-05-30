@@ -415,24 +415,16 @@ Acts as a client-side visual memory bank. You can drag and drop code files, API 
 During graph compilation, any matching baseline keywords are automatically updated to match the exact, case-sensitive casing defined in the memory ledger, preventing spelling mismatches in downstream prompt pipelines.
 
 ### Handles
-| Side | Handle ID | Type | Description |
-| :--- | :--- | :--- | :--- |
-| Left | `file` | Target (Amber) | Input file baseline stream |
-| Right | `memory` | Source (Purple) | Outputs the visual memory catalog stream |
+Context Memory is a **floating global memory bank** and **does not use pins or handles**. It floats independently on the visual canvas.
 
 ### Usage Example
-Connect the `memory` source pin of the Context Memory node to any logic gate's target `memory` handle:
-```
-[File Node] ──file──▶ [AND Gate] ──file──▶ [Prompt File Viewer]
-                         ▲
-[Context Memory] ──mem───┘
-```
-This forces the AND Gate's compile phase to check its output against the Context Memory bank.
+Simply drag a Context Memory node onto the canvas, load your files, and click **Build Context Memory**. If the global toggle is set to **ACTIVE**, the compiler will automatically read this node's extracted memory catalog during prompt compilation cycles. Multiple active memory nodes will have their ledgers merged globally.
 
 ### Fields
 | Field | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `Upload Area` | Click/Drop | (empty) | Accepts `.md, .txt, .html, .json, .xml` |
-| `Files List` | Display | (empty) | Displays loaded files with file sizes and delete options |
-| `Build Button` | Button | (interactive) | Trigger lexical or AI extraction engine |
-| `Memory Preview` | Textarea | (empty) | Interactive preview of the compiled Markdown ledger |
+| `Global Switch` | Toggle button | `ACTIVE` | Click to toggle between `ACTIVE` (enabled) and `INACTIVE` (disabled) to bypass this node's ledger |
+| `Upload Area` | Click/Drop | (empty) | Accepts `.md, .txt, .html, .json, .xml` buffers |
+| `Files List` | Display | (empty) | Displays loaded files with file sizes and delete buttons |
+| `Build Button` | Button | (interactive) | Trigger offline lexical crawler or zero-shot AI cataloger |
+| `Memory Preview` | Textarea | (empty) | Interactive markdown text area to preview and tweak variables |

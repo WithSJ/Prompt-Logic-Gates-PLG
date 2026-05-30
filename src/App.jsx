@@ -188,6 +188,15 @@ function PLGApp() {
       onChangeMemoryText: (id, txt) => {
         setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, extractedMemory: txt } } : n));
       },
+      onToggleEnabled: (id) => {
+        setNodes((nds) => nds.map((n) => {
+          if (n.id === id) {
+            const nextVal = n.data.enabled === false ? true : false;
+            return { ...n, data: { ...n.data, enabled: nextVal } };
+          }
+          return n;
+        }));
+      },
       onAddFiles: async (id, fileList) => {
         const readPromises = fileList.map((file) => {
           return new Promise((resolve) => {
@@ -665,7 +674,8 @@ ${rulesMd}
         compiledPositive: data.compiledPositive,
         compiledNegative: data.compiledNegative,
         files: data.files,
-        extractedMemory: data.extractedMemory
+        extractedMemory: data.extractedMemory,
+        enabled: data.enabled
       }
     }));
 

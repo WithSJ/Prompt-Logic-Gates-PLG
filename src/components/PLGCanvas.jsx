@@ -29,7 +29,7 @@ export default function PLGCanvas({
   const reactFlowWrapper = useRef(null);
   const { screenToFlowPosition } = useReactFlow();
  
-  // Validate connections: File to File, Prompt to Prompt, Questions to Questions, Memory to Memory
+  // Validate connections: File to File, Prompt to Prompt, Questions to Questions
   const isValidConnection = useCallback((connection) => {
     // 1. Prevent connecting a node to itself
     if (connection.source === connection.target) return false;
@@ -39,15 +39,11 @@ export default function PLGCanvas({
     const isTargetFile = connection.targetHandle === 'file';
     const isSourceQuestions = connection.sourceHandle === 'questions';
     const isTargetQuestions = connection.targetHandle === 'questions';
-    const isSourceMemory = connection.sourceHandle === 'memory';
-    const isTargetMemory = connection.targetHandle === 'memory';
  
     // File connections must match on both ends
     if (isSourceFile !== isTargetFile) return false;
     // Questions connections must match on both ends
     if (isSourceQuestions !== isTargetQuestions) return false;
-    // Memory connections must match on both ends
-    if (isSourceMemory !== isTargetMemory) return false;
  
     // 3. Ensure single connection per input handle (target)
     const targetHasEdge = edges.some(

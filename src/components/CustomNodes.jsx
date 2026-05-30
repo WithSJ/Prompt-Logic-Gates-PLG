@@ -136,14 +136,7 @@ export const ANDNode = memo(({ id, data, selected }) => {
         style={{ top: '106px' }}
         title="Prompt B"
       />
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="memory"
-        className="memory"
-        style={{ top: '134px' }}
-        title="Input Context Memory"
-      />
+
       {/* Source Handles */}
       <Handle
         type="source"
@@ -198,14 +191,7 @@ export const ORNode = memo(({ id, data, selected }) => {
         style={{ top: '106px' }}
         title="Prompt B"
       />
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="memory"
-        className="memory"
-        style={{ top: '134px' }}
-        title="Input Context Memory"
-      />
+
       {/* Source Handles */}
       <Handle
         type="source"
@@ -252,14 +238,7 @@ export const NOTNode = memo(({ id, data, selected }) => {
         style={{ top: '78px' }}
         title="Concept A to suppress"
       />
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="memory"
-        className="memory"
-        style={{ top: '106px' }}
-        title="Input Context Memory"
-      />
+
       {/* Source Handles */}
       <Handle
         type="source"
@@ -540,14 +519,7 @@ export const AnswerQuestionsNode = memo(({ id, data, selected }) => {
         style={{ top: '65%' }}
         title="Input File State"
       />
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="memory"
-        className="memory"
-        style={{ top: '85%' }}
-        title="Input Context Memory"
-      />
+
       {/* Source Handles */}
       <Handle
         type="source"
@@ -733,16 +705,43 @@ export const ContextMemoryNode = memo(({ id, data, selected }) => {
     }
   };
 
+  const enabled = data.enabled !== false;
+
   return (
-    <div className={`rf-node ${selected ? 'selected' : ''}`} style={{ '--accent': 'var(--memory)', width: '280px' }}>
+    <div className={`rf-node ${selected ? 'selected' : ''}`} style={{ '--accent': enabled ? 'var(--memory)' : 'var(--txt-faint)', width: '280px', opacity: enabled ? 1 : 0.75 }}>
       <NodeHeader 
         title="Context Memory" 
-        sub="codebase sync" 
-        accent="var(--memory)" 
+        sub={enabled ? "active global" : "inactive"} 
+        accent={enabled ? "var(--memory)" : "var(--txt-faint)"} 
         icon={Brain} 
         onDelete={onDelete}
       />
       <div className="rf-node-body">
+        {/* Toggle active switch */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', paddingBottom: '8px', borderBottom: '1px solid var(--line)' }}>
+          <span style={{ fontSize: '10px', color: 'var(--txt-dim)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Global Context:</span>
+          <button 
+            className="nodrag" 
+            onClick={() => data.onToggleEnabled?.(id)}
+            style={{
+              background: enabled ? 'rgba(52, 211, 153, 0.12)' : 'rgba(248, 113, 113, 0.12)',
+              border: '1px solid ' + (enabled ? 'var(--ok)' : 'var(--err)'),
+              borderRadius: '6px',
+              color: enabled ? 'var(--ok)' : 'var(--err)',
+              padding: '3px 8px',
+              fontSize: '10px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: enabled ? 'var(--ok)' : 'var(--err)', display: 'inline-block' }}></span>
+            {enabled ? 'ACTIVE' : 'INACTIVE'}
+          </button>
+        </div>
         {/* Upload dashed zone */}
         <div 
           className="memory-upload-zone nodrag"
@@ -828,25 +827,7 @@ export const ContextMemoryNode = memo(({ id, data, selected }) => {
         />
       </div>
 
-      {/* Target handle for file stream */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="file"
-        className="file"
-        style={{ top: '56px' }}
-        title="Input File State"
-      />
 
-      {/* Source handle for memory stream */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="memory"
-        className="memory"
-        style={{ top: '50%' }}
-        title="Output Context Memory"
-      />
     </div>
   );
 });

@@ -79,7 +79,7 @@ export function contextScore(text, contextText) {
 
 // Builds the topological execution order based on file and prompt-converter dependencies
 export function buildExecutionOrder(nodes, edges) {
-  const gates = nodes.filter(n => ['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptConcat', 'promptToFile', 'contextMemory'].includes(n.type));
+  const gates = nodes.filter(n => ['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptConcat', 'promptToFile'].includes(n.type));
   
   // Recursive function to trace upstream gate ID from any node ID along file lines
   const traceUpstreamGate = (nodeId) => {
@@ -87,7 +87,7 @@ export function buildExecutionOrder(nodes, edges) {
     if (!e) return null;
     const src = nodes.find(n => n.id === e.source);
     if (!src) return null;
-    if (['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptConcat', 'promptToFile', 'contextMemory'].includes(src.type)) return src.id;
+    if (['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'promptConcat', 'promptToFile'].includes(src.type)) return src.id;
     if (['fileViewer', 'fileToPrompt'].includes(src.type)) {
       return traceUpstreamGate(src.id);
     }
@@ -133,15 +133,7 @@ export function buildExecutionOrder(nodes, edges) {
       }
     }
 
-    // Dependency 5: memory input on any gate connected to Context Memory
-    const mEdge = edges.find(x => x.target === g.id && x.targetHandle === 'memory');
-    if (mEdge) {
-      const src = nodes.find(n => n.id === mEdge.source);
-      if (src && src.type === 'contextMemory') {
-        const fileGate = traceUpstreamGate(src.id);
-        if (fileGate) deps.add(fileGate);
-      }
-    }
+
 
     dependencies[g.id] = Array.from(deps);
   });
@@ -194,20 +186,13 @@ export function getFileInput(nodes, edges, gateId, gateStates) {
   return { positive: '', negative: '' };
 }
 
-// Traces and retrieves memory content connected to a gate, or falls back to canvas-wide memory node
+// Aggregate and retrieve all enabled global memory content from the canvas
 export function getMemoryInput(nodes, edges, gateId) {
-  // Check if there is a direct edge connected to the gate's 'memory' handle
-  const edge = edges.find(e => e.target === gateId && e.targetHandle === 'memory');
-  if (edge) {
-    const sourceNode = nodes.find(sn => sn.id === edge.source);
-    if (sourceNode && sourceNode.type === 'contextMemory') {
-      return sourceNode.data?.extractedMemory || '';
-    }
-  }
-  
-  // Global fallback: find first contextMemory node on the canvas
-  const globalMemoryNode = nodes.find(n => n.type === 'contextMemory');
-  return globalMemoryNode?.data?.extractedMemory || '';
+  // Find all contextMemory nodes that are currently enabled (data.enabled !== false)
+  const enabledMemoryNodes = (nodes || []).filter(
+    n => n.type === 'contextMemory' && n.data?.enabled !== false
+  );
+  return enabledMemoryNodes.map(n => n.data?.extractedMemory || '').filter(Boolean).join('\n\n');
 }
 
 // Retrieve prompt text from input pin recursively resolving converters
@@ -523,13 +508,13 @@ export async function compileGraph(nodes, edges, settings) {
   let activeNegative = '';
 
   const fileNode = nodes.find(n => n.type === 'fileNode');
-  const gates = nodes.filter(n => ['and', 'or', 'not', 'askQuestion', 'answerQuestions', 'contextMemory'].includes(n.type));
+  const gates = nodes.filter(n => ['and', 'or', 'not', 'askQuestion', 'answerQuestions'].includes(n.type));
 
   if (!fileNode) {
     throw new Error('Missing File Node: Please add a File Node as the single source of truth.');
   }
   if (!gates.length) {
-    throw new Error('No logic nodes added: Please add at least one logic node (AND, OR, NOT, Ask Questions, Provide Answers, or Context Memory) to execute prompt logic.');
+    throw new Error('No logic nodes added: Please add at least one logic node (AND, OR, NOT, Ask Questions, or Provide Answers) to execute prompt logic.');
   }
 
   // 1. Stage 0: Initial Memory Read from source
@@ -1179,8 +1164,7 @@ export async function compileGraph(nodes, edges, settings) {
 
   // 4. Offline Context Memory Verification Phase
   let verifiedTerms = [];
-  const memoryNode = nodes.find(n => n.type === 'contextMemory');
-  const memoryContent = memoryNode?.data?.extractedMemory || '';
+  const memoryContent = getMemoryInput(nodes);
   if (memoryContent) {
     const matches = memoryContent.match(/`([^`]+)`|\*\*([^*]+)\*\*/g) || [];
     const extractedTerms = matches.map(m => m.replace(/[`*]/g, '').trim()).filter(Boolean);
@@ -1195,6 +1179,7 @@ export async function compileGraph(nodes, edges, settings) {
     });
   }
 
+  const hasAnyMemoryNode = nodes.some(n => n.type === 'contextMemory');
   stages.push({
     name: 'Context Memory Verification',
     status: memoryContent ? (verifiedTerms.length > 0 ? 'ok' : 'error') : 'info',
@@ -1204,7 +1189,10 @@ export async function compileGraph(nodes, edges, settings) {
          ? `✓ Checked and matched ${verifiedTerms.length} exact memory term(s) in Compiled Prompt:\n${verifiedTerms.map(t => `- \`${t}\``).join('\n')}`
          : `⚠ Context Memory loaded but no exact variables/terms matched in Compiled Prompt.\nAssert casing & exact terms.`
         )
-      : `No Context Memory Node active on canvas.`
+      : (hasAnyMemoryNode 
+         ? `Context Memory loaded but inactive (all nodes disabled).` 
+         : `No Context Memory Node active on canvas.`
+        )
   });
 
   stages.push({
