@@ -711,7 +711,7 @@ ${rulesMd}
         const loadedEdges = (g.edges || []).map((edge) => {
           const isFileEdge = edge.sourceHandle === 'file';
           const isQuestionsEdge = edge.sourceHandle === 'questions';
-          const edgeColor = isFileEdge ? 'var(--file)' : isQuestionsEdge ? '#fb923c' : 'var(--prompt)';
+          const edgeColor = isFileEdge ? 'var(--file)' : isQuestionsEdge ? '#ec4899' : 'var(--prompt)';
           return {
             ...edge,
             style: { stroke: edgeColor },
@@ -1000,7 +1000,7 @@ ${rulesMd}
         }).map((edge) => {
           const isFileEdge = edge.sourceHandle === 'file';
           const isQuestionsEdge = edge.sourceHandle === 'questions';
-          const edgeColor = isFileEdge ? 'var(--file)' : isQuestionsEdge ? '#fb923c' : 'var(--prompt)';
+          const edgeColor = isFileEdge ? 'var(--file)' : isQuestionsEdge ? '#ec4899' : 'var(--prompt)';
           return {
             ...edge,
             style: { stroke: edgeColor },
@@ -1350,7 +1350,7 @@ ${rulesMd}
                   data: { questions: [], ...bindNodeCallbacks(id, 'askQuestion') }
                 }));
               }}
-              style={{ '--accent': '#fb923c' }}
+              style={{ '--accent': '#ec4899' }}
             >
               <div className="ic">?</div>
               <div className="meta">
@@ -1371,7 +1371,7 @@ ${rulesMd}
                   data: { questions: [], answers: {}, ...bindNodeCallbacks(id, 'answerQuestions') }
                 }));
               }}
-              style={{ '--accent': '#fb923c' }}
+              style={{ '--accent': '#ec4899' }}
             >
               <div className="ic">✓</div>
               <div className="meta">
@@ -1383,13 +1383,21 @@ ${rulesMd}
 
           <div className="legend">
             <div className="lh">Pin Connections</div>
-            <div className="lrow">
+            <div className="lrow" title="Amber: passes compiled file baseline states and stream pipelines">
               <span className="ldot file"></span> 
               <span>File Reference</span>
             </div>
-            <div className="lrow">
+            <div className="lrow" title="Cyan: passes raw prompt fragments or text content">
               <span className="ldot prompt"></span> 
               <span>Prompt Content</span>
+            </div>
+            <div className="lrow" title="Pink: passes dynamic clarifying questions list between nodes">
+              <span className="ldot questions"></span> 
+              <span>Question List</span>
+            </div>
+            <div className="lrow" title="Purple: passes global indexed workspace/code variables and rules">
+              <span className="ldot memory"></span> 
+              <span>Context Memory</span>
             </div>
             <div className="tip">
               Drag edge from an <b>output</b> pin to a matching <b>input</b> pin. Pin types must match.

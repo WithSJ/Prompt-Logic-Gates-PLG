@@ -19,6 +19,7 @@
   --not: #ef4444;       /* red */
   --ok: #34d399;        /* green */
   --memory: #c084fc;    /* bright purple memory */
+  --questions: #ec4899; /* hot pink questions */
   --warn: #fbbf24;      /* amber warn */
   --err: #f87171;       /* red err */
 
@@ -352,6 +353,14 @@ input, textarea, select {
   background: var(--prompt);
   box-shadow: 0 0 8px var(--prompt);
 }
+.ldot.questions {
+  background: var(--questions);
+  box-shadow: 0 0 8px var(--questions);
+}
+.ldot.memory {
+  background: var(--memory);
+  box-shadow: 0 0 8px var(--memory);
+}
 .legend .tip {
   font-size: 10.5px;
   color: var(--txt-faint);
@@ -524,7 +533,7 @@ input, textarea, select {
   background: var(--prompt) !important;
 }
 .react-flow__handle.questions {
-  background: #fb923c !important; /* Warm Orange questions pin */
+  background: var(--questions) !important; /* Hot Pink questions pin */
 }
 .react-flow__handle.memory {
   background: var(--memory) !important;

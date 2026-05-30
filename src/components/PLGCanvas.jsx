@@ -60,7 +60,7 @@ export default function PLGCanvas({
     const isFileEdge = params.sourceHandle === 'file';
     const isQuestionsEdge = params.sourceHandle === 'questions';
     const isMemoryEdge = params.sourceHandle === 'memory';
-    const edgeColor = isFileEdge ? 'var(--file)' : isQuestionsEdge ? '#fb923c' : isMemoryEdge ? 'var(--memory)' : 'var(--prompt)';
+    const edgeColor = isFileEdge ? 'var(--file)' : isQuestionsEdge ? '#ec4899' : isMemoryEdge ? 'var(--memory)' : 'var(--prompt)';
  
     const newEdge = {
       ...params,

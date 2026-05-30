@@ -412,11 +412,11 @@ export const AskQuestionNode = memo(({ id, data, selected }) => {
   const questions = data.questions || [];
 
   return (
-    <div className={`rf-node ${selected ? 'selected' : ''}`} style={{ '--accent': '#fb923c', width: '260px' }}>
+    <div className={`rf-node ${selected ? 'selected' : ''}`} style={{ '--accent': '#ec4899', width: '260px' }}>
       <NodeHeader 
         title="Ask AI Questions" 
         sub="clarification" 
-        accent="#fb923c" 
+        accent="#ec4899" 
         icon={HelpCircle} 
         onDelete={onDelete}
       />
@@ -438,7 +438,7 @@ export const AskQuestionNode = memo(({ id, data, selected }) => {
               background: 'var(--bg)',
               border: '1px solid var(--line)',
               borderRadius: '5px',
-              color: '#fb923c',
+              color: '#ec4899',
               padding: '2px 6px',
               fontSize: '11px',
               fontFamily: 'var(--mono)',
@@ -480,16 +480,8 @@ export const AskQuestionNode = memo(({ id, data, selected }) => {
         position={Position.Left}
         id="file"
         className="file"
-        style={{ top: '40%' }}
+        style={{ top: '50%' }}
         title="Input File State"
-      />
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="questions"
-        className="questions"
-        style={{ top: '70%' }}
-        title="Already Asked Questions List to Exclude"
       />
       {/* Source Handles */}
       <Handle
@@ -511,11 +503,11 @@ export const AnswerQuestionsNode = memo(({ id, data, selected }) => {
   const answers = data.answers || {};
 
   return (
-    <div className={`rf-node ${selected ? 'selected' : ''}`} style={{ '--accent': '#fb923c', width: '320px' }}>
+    <div className={`rf-node ${selected ? 'selected' : ''}`} style={{ '--accent': '#ec4899', width: '320px' }}>
       <NodeHeader 
         title="Provide Answers" 
         sub="prompt refiner" 
-        accent="#fb923c" 
+        accent="#ec4899" 
         icon={CheckSquare} 
         onDelete={onDelete}
       />
@@ -562,16 +554,8 @@ export const AnswerQuestionsNode = memo(({ id, data, selected }) => {
         position={Position.Left}
         id="questions"
         className="questions"
-        style={{ top: '35%' }}
+        style={{ top: '50%' }}
         title="Clarifying Questions List"
-      />
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="file"
-        className="file"
-        style={{ top: '65%' }}
-        title="Input File State"
       />
 
       {/* Source Handles */}
