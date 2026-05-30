@@ -173,7 +173,7 @@ function PLGApp() {
           return;
         }
         
-        setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, isRephrasing: true } } : n));
+        setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, userText: currentText, isRephrasing: true } } : n));
         
         try {
           let rephrasedText = '';

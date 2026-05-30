@@ -75,6 +75,17 @@ export const PromptBoxNode = memo(({ id, data, selected }) => {
     }
   };
 
+  const handleKeyDown = (e) => {
+    // Intercept Ctrl+Z / Cmd+Z to undo AI rephrasing back to original user text
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      const userText = data.userText;
+      if (userText !== undefined && userText !== text) {
+        e.preventDefault();
+        data.onChangeText(id, userText);
+      }
+    }
+  };
+
   return (
     <div className={`rf-node ${selected ? 'selected' : ''}`} style={{ '--accent': 'var(--prompt)' }}>
       <NodeHeader 
@@ -87,6 +98,7 @@ export const PromptBoxNode = memo(({ id, data, selected }) => {
         <textarea
           value={text}
           onChange={(e) => data.onChangeText(id, e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Type a prompt fragment... e.g., abandoned hospital"
           className="nodrag"
         />
@@ -94,6 +106,7 @@ export const PromptBoxNode = memo(({ id, data, selected }) => {
           className="prompt-rephrase-btn nodrag"
           onClick={handleRephrase}
           disabled={isRephrasing || !text.trim()}
+          title="AI Rephrase (Press Ctrl+Z on textarea to undo)"
           style={{
             display: 'flex',
             alignItems: 'center',

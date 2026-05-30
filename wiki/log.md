@@ -4,6 +4,14 @@ This is an append-only chronological ledger tracking major engineering steps, re
 
 ---
 
+## [2026-05-30] refine | Implement Prompt Box Rephrase Undo (Ctrl+Z) History System
+- **Action**: Conceived and built a custom keystroke-level undo and checkpointing history mechanism for Prompt Box AI rephrasing, enabling users to press `Ctrl+Z` to revert programmatically rephrased prompts back to their raw typed baseline.
+- **Details**:
+  - **Undo State Capture**: Configured the `onRephrasePrompt` callback in [App.jsx](../src/App.jsx) to capture and store the current, human-written text in the node's state under `data.userText` before launching the AI optimizer.
+  - **Keystroke Listener Interceptor**: Attached a `handleKeyDown` event listener to the `<textarea>` component inside the `PromptBoxNode` custom component in [CustomNodes.jsx](../src/components/CustomNodes.jsx). It catches `Ctrl+Z` (or `Cmd+Z`), checks if there is a recorded `userText` distinct from the current rephrased text, and dynamically restores the user's pre-rephrased baseline.
+  - **Cascading Rephrase Memory**: Enabled continuous multi-rephrasing history. If the user manually modifies an AI-rephrased text and triggers rephrasing again, their manual edits automatically overwrite `userText` as the new history checkpoint.
+  - **Tooltips Updated**: Added tooltip titles explicitly calling out the `Ctrl+Z` undo functionality on Prompt Box rephrase controls.
+
 ## [2026-05-30] refine | Add AI Rephrase Button to Prompt Box Custom Node
 - **Action**: Conceived and integrated an **AI Rephrase Fragment** button directly into the `PromptBoxNode` custom component to automatically optimize raw user inputs, correct typos, grammar issues, and enforce a commanding visual tone.
 - **Details**:
