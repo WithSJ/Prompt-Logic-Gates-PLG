@@ -111,6 +111,56 @@ input, textarea, select {
   text-transform: uppercase;
   margin-top: 1px;
 }
+.workspace-name-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 36px;
+  margin-left: 20px;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+.workspace-name-container:hover {
+  border-color: var(--line2);
+  background: rgba(0, 0, 0, 0.35);
+}
+.workspace-name-container:focus-within {
+  border-color: var(--prompt);
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.15);
+  background: rgba(0, 0, 0, 0.4);
+}
+.workspace-name-container .ws-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--txt-dim);
+  font-weight: 600;
+  user-select: none;
+}
+.workspace-name-input {
+  background: transparent;
+  border: none;
+  color: var(--prompt);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  width: 140px;
+  padding: 0;
+  outline: none;
+}
+.workspace-name-input::placeholder {
+  color: var(--txt-faint);
+}
+.workspace-name-container .ws-ext {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--txt-faint);
+  user-select: none;
+}
+
 .spacer {
   flex: 1;
 }

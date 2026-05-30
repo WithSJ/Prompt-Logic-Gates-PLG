@@ -62,6 +62,7 @@ function PLGApp() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isCompiling, setIsCompiling] = useState(false);
   const [fileTitle, setFileTitle] = useState('prompt.txt');
+  const [workspaceName, setWorkspaceName] = useState('plg-prompt');
   const [toast, setToast] = useState({ show: false, type: 'info', text: '' });
   const [compilationMode, setCompilationMode] = useState(() => {
     return Store.get('plg_compilation_mode') || 'normal';
@@ -86,13 +87,21 @@ function PLGApp() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Update file node title when nodes change
+  // Update file node title when nodes change and keep workspace name synced (converting spaces to underscores)
   useEffect(() => {
     const fileNode = nodes.find((n) => n.type === 'fileNode');
     if (fileNode && fileNode.data && fileNode.data.filename) {
       setFileTitle(fileNode.data.filename);
+      const cleanName = fileNode.data.filename.replace(/\.[a-zA-Z0-9]+$/, '');
+      const withUnderscores = cleanName.replace(/\s+/g, '_');
+      const sanitized = withUnderscores.replace(/[^a-zA-Z0-9_\-]/g, '');
+      if (sanitized && sanitized !== workspaceName) {
+        setWorkspaceName(sanitized);
+      }
+    } else {
+      setFileTitle(workspaceName ? `${workspaceName}.txt` : 'prompt.txt');
     }
-  }, [nodes]);
+  }, [nodes, workspaceName]);
 
   // Load Settings from LocalStorage
   useEffect(() => {
@@ -162,7 +171,13 @@ function PLGApp() {
   const bindNodeCallbacks = useCallback((nId, type) => {
     return {
       onChangeFilename: (id, name) => {
-        setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, filename: name } } : n));
+        const filenameWithUnderscores = name.replace(/\s+/g, '_');
+        setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, filename: filenameWithUnderscores } } : n));
+        const cleanName = filenameWithUnderscores.replace(/\.[a-zA-Z0-9]+$/, '');
+        if (cleanName) {
+          const sanitized = cleanName.replace(/[^a-zA-Z0-9_\-]/g, '');
+          setWorkspaceName(sanitized);
+        }
       },
       onChangeText: (id, txt) => {
         setNodes((nds) => nds.map((n) => n.id === id ? { ...n, data: { ...n.data, text: txt } } : n));
@@ -663,6 +678,9 @@ ${rulesMd}
     if (stored) {
       try {
         const g = JSON.parse(stored);
+        if (g.workspaceName) {
+          setWorkspaceName(g.workspaceName);
+        }
         const loadedNodes = (g.nodes || []).map((node) => ({
           ...node,
           data: {
@@ -695,7 +713,7 @@ ${rulesMd}
     setIsInitialLoadDone(true);
   }, [seedExample, bindNodeCallbacks, setNodes, setEdges, showToast]);
 
-  // Auto-save graph configuration to local storage whenever nodes or edges change
+  // Auto-save graph configuration to local storage whenever nodes, edges, or workspaceName change
   useEffect(() => {
     if (!isInitialLoadDone) return;
     
@@ -724,12 +742,31 @@ ${rulesMd}
 
     const graph = {
       version: 1,
+      workspaceName: workspaceName,
       nodes: cleanNodes,
       edges: cleanEdges
     };
 
     Store.set('plg_last_project', JSON.stringify(graph));
-  }, [nodes, edges, isInitialLoadDone]);
+  }, [nodes, edges, workspaceName, isInitialLoadDone]);
+
+  const handleWorkspaceNameChange = (newName) => {
+    const withUnderscores = newName.replace(/\s+/g, '_');
+    const sanitized = withUnderscores.replace(/[^a-zA-Z0-9_\-]/g, '');
+    setWorkspaceName(sanitized);
+    setNodes((nds) => nds.map((n) => {
+      if (n.type === 'fileNode') {
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            filename: sanitized ? `${sanitized}.txt` : 'prompt.txt'
+          }
+        };
+      }
+      return n;
+    }));
+  };
 
   // Create a new project (seeding the default workspace)
   const handleNewProject = () => {
@@ -870,6 +907,7 @@ ${rulesMd}
 
     const graph = {
       version: 1,
+      workspaceName: workspaceName,
       nodes: cleanNodes,
       edges: cleanEdges
     };
@@ -878,10 +916,10 @@ ${rulesMd}
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'plg-graph.json';
+    a.download = `${workspaceName || 'plg-graph'}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast('Graph configuration downloaded as plg-graph.json', 'ok');
+    showToast(`Graph configuration downloaded as ${workspaceName || 'plg-graph'}.json`, 'ok');
   };
 
   // Trigger file loader
@@ -899,6 +937,15 @@ ${rulesMd}
       try {
         const g = JSON.parse(reader.result);
         
+        // Re-inject workspaceName
+        if (g.workspaceName) {
+          setWorkspaceName(g.workspaceName);
+        } else {
+          // Fallback to loaded file name without .json extension
+          const nameFromContainer = file.name.replace(/\.json$/i, '');
+          setWorkspaceName(nameFromContainer);
+        }
+
         // Re-inject core bindings and handlers to loaded elements
         let loadedNodes = (g.nodes || []).map((node) => ({
           ...node,
@@ -945,7 +992,6 @@ ${rulesMd}
         setNodes(loadedNodes);
         setEdges(loadedEdges);
         showToast('Graph configuration loaded successfully', 'ok');
-        
 
       } catch (err) {
         showToast('Could not load that file. Assert it is a valid PLG JSON config.', 'err');
@@ -965,7 +1011,7 @@ ${rulesMd}
       return;
     }
 
-    const filename = fileTitle || 'prompt.txt';
+    const filename = workspaceName ? `${workspaceName}.txt` : 'prompt.txt';
     const fileBody = `# Compiled Prompt\n${posPrompt}\n`;
     
     const blob = new Blob([fileBody], { type: 'text/plain;charset=utf-8' });
@@ -996,6 +1042,18 @@ ${rulesMd}
             <div className="name">PLG <b>·</b> Prompt Logic Gates</div>
             <div className="sub">Semantic Prompt Compiler</div>
           </div>
+        </div>
+
+        <div className="workspace-name-container" title="Rename workspace configuration and saved files">
+          <span className="ws-label">Workspace:</span>
+          <input 
+            type="text" 
+            className="workspace-name-input" 
+            value={workspaceName} 
+            onChange={(e) => handleWorkspaceNameChange(e.target.value)}
+            placeholder="workspace-name"
+          />
+          <span className="ws-ext">.json / .txt</span>
         </div>
 
         <div className="spacer"></div>

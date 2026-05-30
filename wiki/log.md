@@ -4,6 +4,16 @@ This is an append-only chronological ledger tracking major engineering steps, re
 
 ---
 
+## [2026-05-30] design | Implement Editable Workspace Name & Integrated Filename Synchronization
+- **Action**: Conceived and integrated an editable **Workspace Name** control directly in the IDE Topbar, creating an automated two-way synchronization loop that governs all downloaded `.json` graph configurations and exported `.txt` prompt briefs, with automated space-to-underscore sanitization.
+- **Details**:
+  - **Topbar Workspace Control**: Designed and styled a premium, glassmorphic `.workspace-name-container` component in the [App.jsx](../src/App.jsx) Topbar. Equipped it with hover animations, reactive focus-glowing cyan borders, and integrated file extension indicators (`.json / .txt`).
+  - **Two-Way Binding Engine**: Implemented an automated synchronization system in [App.jsx](../src/App.jsx). Changing the Workspace input automatically propagates the name down to rename any active `fileNode` filenames on the canvas; conversely, editing the filename on the canvas dynamically updates the Workspace input in the Topbar.
+  - **Automated Space-to-Underscore Substitution**: Configured real-time input sanitizers across all entry streams—including Topbar workspace input, File Node filename change handlers, and nodes sync hooks—to automatically convert space (` `) characters into underscores (`_`) to maintain strict operating system and filesystem filename safety.
+  - **Persistent LocalStorage Sync**: Updated the mount-restore and auto-save `useEffect` hooks in [App.jsx](../src/App.jsx) to preserve `workspaceName` under `plg_last_project`, ensuring it restores seamlessly on page reloads.
+  - **Automated Filename Saves**: Refactored `handleSaveGraph` and `handleExportTxt` in [App.jsx](../src/App.jsx) to compile filenames dynamically as `${workspaceName}.json` and `${workspaceName}.txt` respectively, addressing the user's need for consistent, workspace-aligned file naming.
+  - **Vite & CSS Compilation Verified**: Rectified a minor unbalanced CSS bracket in [index.css](../src/index.css) and compiled the production build using Vite to guarantee zero warning alerts.
+
 ## [2026-05-30] refine | Implement Prompt Box Rephrase Undo (Ctrl+Z) History System
 - **Action**: Conceived and built a custom keystroke-level undo and checkpointing history mechanism for Prompt Box AI rephrasing, enabling users to press `Ctrl+Z` to revert programmatically rephrased prompts back to their raw typed baseline.
 - **Details**:
